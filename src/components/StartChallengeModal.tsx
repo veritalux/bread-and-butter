@@ -185,7 +185,7 @@ export default function StartChallengeModal({ isOpen, onClose }: Props) {
 
               <button
                 onClick={handleStart}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[var(--color-primary)] text-white font-semibold hover:brightness-110 transition-all cursor-pointer border-0"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold hover:brightness-110 transition-all cursor-pointer border-0"
               >
                 <Rocket size={18} />
                 Start Challenge

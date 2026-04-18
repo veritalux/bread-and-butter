@@ -3,17 +3,27 @@ import StatsBar from "../components/StatsBar";
 import AccountabilityBanner from "../components/AccountabilityBanner";
 import ChallengesSection from "../components/ChallengesSection";
 import MotivationBanner from "../components/MotivationBanner";
+import { useApp } from "../context/AppContext";
 
 export default function Dashboard() {
-  // In a real app these would come from the logged-in user's profile
-  const streak = 12;
-  const longestStreak = 18;
+  const { currentUser, allUsers } = useApp();
+  const streak = currentUser?.streak ?? 0;
+  const longestStreak = currentUser?.longestStreak ?? 0;
+
+  const moderator =
+    currentUser?.moderatorId
+      ? allUsers.find((u) => u.id === currentUser.moderatorId)
+      : allUsers.find((u) => u.role === "moderator");
 
   return (
     <main>
       <HeroSection />
       <StatsBar />
-      <AccountabilityBanner streak={streak} longestStreak={longestStreak} />
+      <AccountabilityBanner
+        streak={streak}
+        longestStreak={longestStreak}
+        moderatorName={moderator?.name ?? "your coach"}
+      />
       <ChallengesSection />
       <MotivationBanner />
     </main>

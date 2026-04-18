@@ -10,7 +10,7 @@ import {
   Flame,
   XCircle,
 } from "lucide-react";
-import { sampleUsers } from "../data/sampleUsers";
+import { useApp } from "../context/AppContext";
 import { getActivityStatus, getDaysSinceActive } from "../types/user";
 import type { AppUser, ActivityStatus } from "../types/user";
 
@@ -164,9 +164,10 @@ function UserRow({ user }: { user: AppUser }) {
 }
 
 export default function ModeratorDashboard() {
+  const { allUsers, currentUser } = useApp();
   const [filter, setFilter] = useState<"all" | ActivityStatus>("all");
 
-  const users = sampleUsers.filter((u) => u.role === "user");
+  const users = allUsers.filter((u) => u.role === "user");
   const filtered = filter === "all" ? users : users.filter((u) => getActivityStatus(u.lastActiveDate) === filter);
 
   const activeCount = users.filter((u) => getActivityStatus(u.lastActiveDate) === "active").length;
@@ -189,7 +190,9 @@ export default function ModeratorDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text-heading)]">Moderator Dashboard</h1>
-            <p className="text-sm text-[var(--color-text-muted)]">Your people, their progress</p>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              {currentUser ? `Signed in as ${currentUser.name} — ` : ""}your people, their progress
+            </p>
           </div>
         </div>
       </div>

@@ -53,7 +53,7 @@ export default function ChallengeTracker({ challenge, onClose }: Props) {
             </div>
             <div className="h-4 bg-[var(--color-background)] rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[var(--color-primary)] to-emerald-400 rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -101,7 +101,7 @@ export default function ChallengeTracker({ challenge, onClose }: Props) {
           </div>
           <button
             onClick={handleLog}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[var(--color-primary)] text-white font-semibold hover:brightness-110 transition-all cursor-pointer border-0"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold hover:brightness-110 transition-all cursor-pointer border-0"
           >
             <CheckCircle size={16} />
             I Stayed on Track Today
