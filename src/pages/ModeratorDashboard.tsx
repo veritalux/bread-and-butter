@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { getIcon } from "../data/sampleData";
 import { getActivityStatus, getDaysSinceActive } from "../types/user";
 import type { AppUser, ActivityStatus } from "../types/user";
 
@@ -124,7 +125,7 @@ function UserRow({ user }: { user: AppUser }) {
           <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Challenges</h4>
           <div className="space-y-2 mb-4">
             {user.challenges.map((c) => {
-              const Icon = c.icon;
+              const Icon = getIcon(c.icon);
               const prog = Math.min((c.saved / c.goal) * 100, 100);
               return (
                 <div key={c.id} className="flex items-center gap-3 bg-[var(--color-background)] rounded-lg p-3">

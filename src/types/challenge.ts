@@ -1,10 +1,8 @@
-import { type LucideIcon } from "lucide-react";
-
 export interface Challenge {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: string;
   saved: number;
   goal: number;
   daysLeft: number;
@@ -25,7 +23,7 @@ export interface ChallengeTemplate {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: string;
   category: "recommended" | "trending" | "purchase";
   tag?: string;
   savingsEstimate: string;

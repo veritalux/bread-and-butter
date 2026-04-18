@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, ArrowLeft, Rocket } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { challengeTemplates } from "../data/sampleData";
+import { challengeTemplates, getIcon } from "../data/sampleData";
 import type { ChallengeTemplate } from "../types/challenge";
 
 interface Props {
@@ -104,7 +104,7 @@ export default function StartChallengeModal({ isOpen, onClose }: Props) {
                   </h3>
                   <div className="space-y-2">
                     {grouped[cat].map((c) => {
-                      const Icon = c.icon;
+                      const Icon = getIcon(c.icon);
                       return (
                         <button
                           key={c.id}

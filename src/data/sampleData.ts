@@ -1,12 +1,25 @@
-import { Coffee, ShoppingBag, UtensilsCrossed, Zap, ShoppingCart } from "lucide-react";
+import { Coffee, ShoppingBag, UtensilsCrossed, Zap, ShoppingCart, HelpCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { Challenge, ChallengeTemplate } from "../types/challenge";
+
+const iconMap: Record<string, LucideIcon> = {
+  Coffee,
+  ShoppingBag,
+  UtensilsCrossed,
+  Zap,
+  ShoppingCart,
+};
+
+export function getIcon(name: string): LucideIcon {
+  return iconMap[name] ?? HelpCircle;
+}
 
 export const sampleChallenges: Challenge[] = [
   {
     id: "1",
     title: "Coffee Cutback",
     description: "Skip the daily latte and redirect to investments",
-    icon: Coffee,
+    icon: "Coffee",
     saved: 18,
     goal: 50,
     daysLeft: 12,
@@ -23,7 +36,7 @@ export const sampleChallenges: Challenge[] = [
     id: "2",
     title: "No Impulse Buys",
     description: "Wait 24hrs before any non-essential purchase",
-    icon: ShoppingBag,
+    icon: "ShoppingBag",
     saved: 45,
     goal: 100,
     daysLeft: 8,
@@ -39,7 +52,7 @@ export const sampleChallenges: Challenge[] = [
     id: "3",
     title: "Meal Prep Week",
     description: "Cook at home instead of eating out",
-    icon: UtensilsCrossed,
+    icon: "UtensilsCrossed",
     saved: 32,
     goal: 75,
     daysLeft: 5,
@@ -58,7 +71,7 @@ export const challengeTemplates: ChallengeTemplate[] = [
     id: "t1",
     title: "Coffee Cutback",
     description: "Skip the daily coffee and redirect that money toward investments.",
-    icon: Coffee,
+    icon: "Coffee",
     category: "recommended",
     tag: "Popular",
     savingsEstimate: "$50-150/mo",
@@ -74,7 +87,7 @@ export const challengeTemplates: ChallengeTemplate[] = [
     id: "t2",
     title: "No Impulse Buys",
     description: "Implement a 24-hour rule on all non-essential purchases.",
-    icon: ShoppingBag,
+    icon: "ShoppingBag",
     category: "recommended",
     tag: "High Impact",
     savingsEstimate: "$100-300/mo",
@@ -90,7 +103,7 @@ export const challengeTemplates: ChallengeTemplate[] = [
     id: "t3",
     title: "Inflation Beater",
     description: "Combat rising prices by cutting one weekly expense and investing the difference.",
-    icon: Zap,
+    icon: "Zap",
     category: "trending",
     tag: "Trending",
     savingsEstimate: "$75-200/mo",
@@ -106,7 +119,7 @@ export const challengeTemplates: ChallengeTemplate[] = [
     id: "t4",
     title: "Purchase Fund",
     description: "Save up for a specific item by cutting daily spending.",
-    icon: ShoppingCart,
+    icon: "ShoppingCart",
     category: "purchase",
     tag: "Goal-Based",
     savingsEstimate: "Custom",

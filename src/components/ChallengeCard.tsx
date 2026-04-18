@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import type { Challenge } from "../types/challenge";
+import { getIcon } from "../data/sampleData";
 
 interface Props {
   challenge: Challenge;
@@ -9,7 +10,7 @@ interface Props {
 
 export default function ChallengeCard({ challenge, onLogProgress, onClick }: Props) {
   const progress = Math.min((challenge.saved / challenge.goal) * 100, 100);
-  const Icon = challenge.icon;
+  const Icon = getIcon(challenge.icon);
 
   return (
     <div
