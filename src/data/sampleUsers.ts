@@ -3,6 +3,18 @@ import type { AppUser } from "../types/user";
 
 export const sampleUsers: AppUser[] = [
   {
+    id: "m1",
+    name: "Coach Rivera",
+    initials: "CR",
+    email: "coach@breadandbutter.com",
+    role: "moderator",
+    joinedDate: "2026-01-01",
+    lastActiveDate: "2026-04-18",
+    streak: 0,
+    longestStreak: 0,
+    challenges: [],
+  },
+  {
     id: "u1",
     name: "Sarah Martinez",
     initials: "SM",
