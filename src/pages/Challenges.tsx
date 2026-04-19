@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Target, Trophy, TrendingUp } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 import ChallengeCard from "../components/ChallengeCard";
 import ChallengeTracker from "../components/ChallengeTracker";
 

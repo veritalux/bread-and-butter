@@ -9,11 +9,14 @@ import {
   MessageCircle,
   Flame,
   XCircle,
+  Settings,
+  Send,
+  FileText,
 } from "lucide-react";
-import { useApp } from "../context/AppContext";
-import { getIcon } from "../data/sampleData";
+import { useApp } from "../context/useApp";
+import { ChallengeIcon } from "../data/sampleData";
 import { getActivityStatus, getDaysSinceActive } from "../types/user";
-import type { AppUser, ActivityStatus } from "../types/user";
+import type { AppUser, ActivityStatus, CheckInThreshold } from "../types/user";
 
 const statusConfig: Record<ActivityStatus, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
   active: { label: "Active", color: "#10B981", bg: "rgba(16, 185, 129, 0.1)", icon: CheckCircle },
@@ -21,16 +24,101 @@ const statusConfig: Record<ActivityStatus, { label: string; color: string; bg: s
   inactive: { label: "Needs Outreach", color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)", icon: AlertTriangle },
 };
 
+function ThresholdEditor({ threshold, onChange, onClose }: {
+  threshold: CheckInThreshold;
+  onChange: (t: CheckInThreshold) => void;
+  onClose: () => void;
+}) {
+  const [warn, setWarn] = useState(threshold.warningDays);
+  const [inactive, setInactive] = useState(threshold.inactiveDays);
+
+  return (
+    <div className="bg-[var(--color-background)] rounded-lg p-4 mt-3 border border-[var(--color-border)] animate-fade-in">
+      <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+        Check-in Thresholds
+      </h4>
+      <div className="grid grid-cols-2 gap-4 mb-3">
+        <div>
+          <label className="text-xs text-[var(--color-text-muted)] block mb-1">
+            Flag as slipping after
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={warn}
+              onChange={(e) => setWarn(Math.max(1, Number(e.target.value)))}
+              className="w-16 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-sm text-[var(--color-text)] text-center"
+            />
+            <span className="text-xs text-[var(--color-text-muted)]">days</span>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-[var(--color-text-muted)] block mb-1">
+            Flag as needs outreach after
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={2}
+              max={60}
+              value={inactive}
+              onChange={(e) => setInactive(Math.max(2, Number(e.target.value)))}
+              className="w-16 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-2 py-1.5 text-sm text-[var(--color-text)] text-center"
+            />
+            <span className="text-xs text-[var(--color-text-muted)]">days</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            const correctedInactive = Math.max(inactive, warn + 1);
+            onChange({ warningDays: warn, inactiveDays: correctedInactive });
+            onClose();
+          }}
+          className="px-3 py-1.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-xs font-medium cursor-pointer border-0"
+        >
+          Save
+        </button>
+        <button
+          onClick={onClose}
+          className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-medium cursor-pointer bg-transparent"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function UserRow({ user }: { user: AppUser }) {
+  const { getThreshold, setThreshold, getCheckInLogs, addCheckInLog } = useApp();
   const [expanded, setExpanded] = useState(false);
-  const status = getActivityStatus(user.lastActiveDate);
+  const [showThresholdEditor, setShowThresholdEditor] = useState(false);
+  const [showCheckInForm, setShowCheckInForm] = useState(false);
+  const [checkInNote, setCheckInNote] = useState("");
+  const [showLogs, setShowLogs] = useState(false);
+
+  const threshold = getThreshold(user.id);
+  const status = getActivityStatus(user.lastActiveDate, threshold);
   const daysSince = getDaysSinceActive(user.lastActiveDate);
   const config = statusConfig[status];
   const StatusIcon = config.icon;
+  const logs = getCheckInLogs(user.id);
 
   const totalSaved = user.challenges.reduce((sum, c) => sum + c.saved, 0);
   const totalGoal = user.challenges.reduce((sum, c) => sum + c.goal, 0);
   const overallProgress = totalGoal > 0 ? Math.round((totalSaved / totalGoal) * 100) : 0;
+
+  const handleCheckIn = () => {
+    if (!checkInNote.trim()) return;
+    addCheckInLog(user.id, checkInNote.trim());
+    setCheckInNote("");
+    setShowCheckInForm(false);
+    setShowLogs(true);
+  };
 
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden transition-all hover:border-[var(--color-border)]/80">
@@ -121,15 +209,36 @@ function UserRow({ user }: { user: AppUser }) {
             </div>
           </div>
 
+          {/* Threshold info line */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Slipping after {threshold.warningDays}d · Outreach after {threshold.inactiveDays}d
+            </p>
+            <button
+              onClick={() => setShowThresholdEditor(!showThresholdEditor)}
+              className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)] cursor-pointer bg-transparent border-0 hover:underline"
+            >
+              <Settings size={12} />
+              Adjust
+            </button>
+          </div>
+
+          {showThresholdEditor && (
+            <ThresholdEditor
+              threshold={threshold}
+              onChange={(t) => setThreshold(user.id, t)}
+              onClose={() => setShowThresholdEditor(false)}
+            />
+          )}
+
           {/* Challenges */}
           <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Challenges</h4>
           <div className="space-y-2 mb-4">
             {user.challenges.map((c) => {
-              const Icon = getIcon(c.icon);
               const prog = Math.min((c.saved / c.goal) * 100, 100);
               return (
                 <div key={c.id} className="flex items-center gap-3 bg-[var(--color-background)] rounded-lg p-3">
-                  <Icon size={16} className="text-[var(--color-primary)] shrink-0" />
+                  <ChallengeIcon name={c.icon} size={16} className="text-[var(--color-primary)] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-[var(--color-text-heading)] truncate">{c.title}</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -147,16 +256,84 @@ function UserRow({ user }: { user: AppUser }) {
             })}
           </div>
 
-          {/* Action button */}
-          {status !== "active" && (
-            <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-dashed text-sm font-medium transition-colors cursor-pointer bg-transparent"
-              style={{ borderColor: config.color, color: config.color }}
+          {/* Check-in section */}
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              onClick={() => { setShowCheckInForm(!showCheckInForm); setShowLogs(false); }}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-sm font-medium cursor-pointer border-0 hover:brightness-110 transition-all"
             >
               <MessageCircle size={16} />
-              {status === "warning"
-                ? `Nudge ${user.name.split(" ")[0]} — slipping for ${daysSince} days`
-                : `Reach out to ${user.name.split(" ")[0]} — gone ${daysSince} days`}
+              Log Check-in
             </button>
+            {logs.length > 0 && (
+              <button
+                onClick={() => { setShowLogs(!showLogs); setShowCheckInForm(false); }}
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] text-sm font-medium cursor-pointer bg-transparent hover:bg-[var(--color-surface)] transition-colors"
+              >
+                <FileText size={14} />
+                {logs.length}
+              </button>
+            )}
+          </div>
+
+          {/* Check-in form */}
+          {showCheckInForm && (
+            <div className="bg-[var(--color-background)] rounded-lg p-4 border border-[var(--color-border)] mb-3 animate-fade-in">
+              <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                New Check-in with {user.name.split(" ")[0]}
+              </h4>
+              <textarea
+                value={checkInNote}
+                onChange={(e) => setCheckInNote(e.target.value)}
+                placeholder="What did you discuss? How are they doing?"
+                rows={3}
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] resize-none mb-2"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCheckIn}
+                  disabled={!checkInNote.trim()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-xs font-medium cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Send size={12} />
+                  Save Check-in
+                </button>
+                <button
+                  onClick={() => { setShowCheckInForm(false); setCheckInNote(""); }}
+                  className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-medium cursor-pointer bg-transparent"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Check-in log history */}
+          {showLogs && logs.length > 0 && (
+            <div className="bg-[var(--color-background)] rounded-lg p-4 border border-[var(--color-border)] animate-fade-in">
+              <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+                Check-in History
+              </h4>
+              <div className="space-y-3 max-h-48 overflow-y-auto">
+                {[...logs].reverse().map((log) => (
+                  <div key={log.id} className="flex gap-3">
+                    <div className="w-1.5 rounded-full bg-[var(--color-primary)] shrink-0 mt-1" style={{ minHeight: "16px" }} />
+                    <div>
+                      <p className="text-xs text-[var(--color-text-muted)]">
+                        {new Date(log.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <p className="text-sm text-[var(--color-text)] mt-0.5">{log.note}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -165,20 +342,25 @@ function UserRow({ user }: { user: AppUser }) {
 }
 
 export default function ModeratorDashboard() {
-  const { allUsers, currentUser } = useApp();
+  const { allUsers, currentUser, getThreshold } = useApp();
   const [filter, setFilter] = useState<"all" | ActivityStatus>("all");
 
   const users = allUsers.filter((u) => u.role === "user");
-  const filtered = filter === "all" ? users : users.filter((u) => getActivityStatus(u.lastActiveDate) === filter);
+  const filtered = filter === "all"
+    ? users
+    : users.filter((u) => getActivityStatus(u.lastActiveDate, getThreshold(u.id)) === filter);
 
-  const activeCount = users.filter((u) => getActivityStatus(u.lastActiveDate) === "active").length;
-  const warningCount = users.filter((u) => getActivityStatus(u.lastActiveDate) === "warning").length;
-  const inactiveCount = users.filter((u) => getActivityStatus(u.lastActiveDate) === "inactive").length;
+  const activeCount = users.filter((u) => getActivityStatus(u.lastActiveDate, getThreshold(u.id)) === "active").length;
+  const warningCount = users.filter((u) => getActivityStatus(u.lastActiveDate, getThreshold(u.id)) === "warning").length;
+  const inactiveCount = users.filter((u) => getActivityStatus(u.lastActiveDate, getThreshold(u.id)) === "inactive").length;
 
   // Sort: inactive first, then warning, then active
   const sorted = [...filtered].sort((a, b) => {
     const order: Record<ActivityStatus, number> = { inactive: 0, warning: 1, active: 2 };
-    return order[getActivityStatus(a.lastActiveDate)] - order[getActivityStatus(b.lastActiveDate)];
+    return (
+      order[getActivityStatus(a.lastActiveDate, getThreshold(a.id))] -
+      order[getActivityStatus(b.lastActiveDate, getThreshold(b.id))]
+    );
   });
 
   return (
@@ -236,7 +418,7 @@ export default function ModeratorDashboard() {
               {inactiveCount} member{inactiveCount !== 1 && "s"} need{inactiveCount === 1 && "s"} personal outreach
             </p>
             <p className="text-xs text-red-400/70 mt-0.5">
-              They haven't logged activity in 4+ days. Time for a check-in.
+              Check each member's thresholds — they've passed their outreach window.
             </p>
           </div>
         </div>

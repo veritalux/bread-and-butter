@@ -1,9 +1,10 @@
 import HeroSection from "../components/HeroSection";
+import HowItWorks from "../components/HowItWorks";
 import StatsBar from "../components/StatsBar";
 import AccountabilityBanner from "../components/AccountabilityBanner";
 import ChallengesSection from "../components/ChallengesSection";
 import MotivationBanner from "../components/MotivationBanner";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 
 export default function Dashboard() {
   const { currentUser, allUsers } = useApp();
@@ -18,6 +19,7 @@ export default function Dashboard() {
   return (
     <main>
       <HeroSection />
+      <HowItWorks />
       <StatsBar />
       <AccountabilityBanner
         streak={streak}

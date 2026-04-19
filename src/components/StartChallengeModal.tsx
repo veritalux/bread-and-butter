@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, ArrowLeft, Rocket } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 import { challengeTemplates, getIcon } from "../data/sampleData";
 import type { ChallengeTemplate } from "../types/challenge";
 

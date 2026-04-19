@@ -18,6 +18,19 @@ export interface AppUser {
   moderatorId?: string;
 }
 
+export interface CheckInThreshold {
+  warningDays: number;
+  inactiveDays: number;
+}
+
+export interface CheckInLog {
+  id: string;
+  date: string;
+  note: string;
+}
+
+export const DEFAULT_THRESHOLD: CheckInThreshold = { warningDays: 2, inactiveDays: 4 };
+
 export function makeInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 0) return "?";
@@ -25,13 +38,12 @@ export function makeInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function getActivityStatus(lastActiveDate: string): ActivityStatus {
-  const now = new Date();
-  const last = new Date(lastActiveDate);
-  const daysSince = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+export function getActivityStatus(lastActiveDate: string, threshold?: CheckInThreshold): ActivityStatus {
+  const daysSince = getDaysSinceActive(lastActiveDate);
+  const t = threshold ?? DEFAULT_THRESHOLD;
 
-  if (daysSince <= 1) return "active";
-  if (daysSince <= 3) return "warning";
+  if (daysSince < t.warningDays) return "active";
+  if (daysSince < t.inactiveDays) return "warning";
   return "inactive";
 }
 

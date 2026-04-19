@@ -1,45 +1,12 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import type { Challenge, UserFinances } from "../types/challenge";
-import type { AppUser, UserRole } from "../types/user";
-import { makeInitials } from "../types/user";
+import type { AppUser, CheckInThreshold, CheckInLog } from "../types/user";
+import { makeInitials, DEFAULT_THRESHOLD } from "../types/user";
 import { sampleChallenges } from "../data/sampleData";
 import { sampleUsers } from "../data/sampleUsers";
-
-type Theme = "dark" | "light" | "sepia";
-export type FontChoice = "sans" | "serif" | "mono" | "rounded" | "display";
-
-export const FONT_LABELS: Record<FontChoice, string> = {
-  sans: "Sans (Default)",
-  serif: "Serif",
-  mono: "Monospace",
-  rounded: "Rounded",
-  display: "Display",
-};
-
-interface SignUpInput {
-  name: string;
-  email: string;
-  role: UserRole;
-}
-
-interface AppContextType {
-  theme: Theme;
-  setTheme: (t: Theme) => void;
-  font: FontChoice;
-  setFont: (f: FontChoice) => void;
-  currentUser: AppUser | null;
-  login: (email: string) => { ok: true; user: AppUser } | { ok: false; error: string };
-  signUp: (input: SignUpInput) => { ok: true; user: AppUser } | { ok: false; error: string };
-  logout: () => void;
-  allUsers: AppUser[];
-  challenges: Challenge[];
-  addChallenge: (c: Challenge) => void;
-  logProgress: (challengeId: string, amount: number, note?: string) => void;
-  finances: UserFinances;
-  setFinances: (f: UserFinances) => void;
-}
-
-const AppContext = createContext<AppContextType | null>(null);
+import { AppContext } from "./appContextDef";
+import type { AppContextType, Theme } from "./appContextDef";
+import type { FontChoice } from "../types/fonts";
 
 const DEFAULT_FINANCES: UserFinances = { weeklyIncome: 1000, taxRate: 22, weeklyInvestment: 100 };
 
@@ -141,6 +108,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (currentUser) {
       localStorage.setItem(userFinancesKey(currentUser.id), JSON.stringify(f));
     }
+  };
+
+  // --- Thresholds (per-user, moderator-set) ---
+  const [thresholds, setThresholds] = useState<Record<string, CheckInThreshold>>(() => {
+    const stored = localStorage.getItem("bb-thresholds");
+    if (stored) { try { return JSON.parse(stored); } catch { /* fall through */ } }
+    return {};
+  });
+
+  const getThreshold = (userId: string): CheckInThreshold =>
+    thresholds[userId] ?? DEFAULT_THRESHOLD;
+
+  const setThreshold = (userId: string, t: CheckInThreshold) => {
+    setThresholds((prev) => {
+      const next = { ...prev, [userId]: t };
+      localStorage.setItem("bb-thresholds", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  // --- Check-in logs (per-user) ---
+  const [checkInLogs, setCheckInLogs] = useState<Record<string, CheckInLog[]>>(() => {
+    const stored = localStorage.getItem("bb-checkin-logs");
+    if (stored) { try { return JSON.parse(stored); } catch { /* fall through */ } }
+    return {};
+  });
+
+  const getCheckInLogs = (userId: string): CheckInLog[] =>
+    checkInLogs[userId] ?? [];
+
+  const addCheckInLog = (userId: string, note: string) => {
+    setCheckInLogs((prev) => {
+      const entry: CheckInLog = {
+        id: `cl-${Date.now()}`,
+        date: new Date().toISOString(),
+        note,
+      };
+      const next = { ...prev, [userId]: [...(prev[userId] ?? []), entry] };
+      localStorage.setItem("bb-checkin-logs", JSON.stringify(next));
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -270,6 +278,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logProgress,
         finances,
         setFinances,
+        getThreshold,
+        setThreshold,
+        getCheckInLogs,
+        addCheckInLog,
       }}
     >
       {children}
@@ -277,8 +289,3 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useApp() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useApp must be used within AppProvider");
-  return ctx;
-}

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sun, Moon, BookOpen, Type, LogOut, Check } from "lucide-react";
-import { useApp, FONT_LABELS, type FontChoice } from "../context/AppContext";
+import { useApp } from "../context/useApp";
+import { FONT_LABELS, type FontChoice } from "../types/fonts";
 
 const FONT_ORDER: FontChoice[] = ["sans", "serif", "mono", "rounded", "display"];
 
@@ -57,7 +58,7 @@ export default function Navbar() {
           to={isMod ? "/moderator" : "/"}
           className="flex items-center gap-2 text-[var(--color-text-heading)] font-bold text-lg no-underline"
         >
-          <span className="text-2xl">🍞</span>
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="w-7 h-7" />
           Bread &amp; Butter
         </Link>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 import ChallengeCard from "./ChallengeCard";
 import ChallengeTracker from "./ChallengeTracker";
 import StartChallengeModal from "./StartChallengeModal";

@@ -1,5 +1,6 @@
+import { createElement } from "react";
 import { Coffee, ShoppingBag, UtensilsCrossed, Zap, ShoppingCart, HelpCircle } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon, LucideProps } from "lucide-react";
 import type { Challenge, ChallengeTemplate } from "../types/challenge";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -12,6 +13,10 @@ const iconMap: Record<string, LucideIcon> = {
 
 export function getIcon(name: string): LucideIcon {
   return iconMap[name] ?? HelpCircle;
+}
+
+export function ChallengeIcon({ name, ...props }: { name: string } & LucideProps) {
+  return createElement(iconMap[name] ?? HelpCircle, props);
 }
 
 export const sampleChallenges: Challenge[] = [

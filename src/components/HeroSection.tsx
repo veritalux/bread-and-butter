@@ -39,7 +39,13 @@ export default function HeroSection() {
               <Rocket size={18} />
               Start a Challenge
             </button>
-            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-[var(--color-border)] text-[var(--color-text)] font-medium hover:bg-[var(--color-surface)] transition-colors cursor-pointer bg-transparent">
+            <button
+              onClick={() => {
+                const el = document.getElementById("how-it-works");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-[var(--color-border)] text-[var(--color-text)] font-medium hover:bg-[var(--color-surface)] transition-colors cursor-pointer bg-transparent"
+            >
               See How It Works
               <ArrowRight size={16} />
             </button>

@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import type { Challenge } from "../types/challenge";
-import { getIcon } from "../data/sampleData";
+import { ChallengeIcon } from "../data/sampleData";
 
 interface Props {
   challenge: Challenge;
@@ -10,7 +10,6 @@ interface Props {
 
 export default function ChallengeCard({ challenge, onLogProgress, onClick }: Props) {
   const progress = Math.min((challenge.saved / challenge.goal) * 100, 100);
-  const Icon = getIcon(challenge.icon);
 
   return (
     <div
@@ -20,7 +19,7 @@ export default function ChallengeCard({ challenge, onLogProgress, onClick }: Pro
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-[var(--color-glow)] flex items-center justify-center">
-            <Icon size={20} className="text-[var(--color-primary)]" />
+            <ChallengeIcon name={challenge.icon} size={20} className="text-[var(--color-primary)]" />
           </div>
           <div>
             <h3 className="font-semibold text-[var(--color-text-heading)] text-sm">{challenge.title}</h3>

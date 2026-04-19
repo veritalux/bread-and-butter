@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
-import { AppProvider, useApp } from "./context/AppContext";
+import { AppProvider } from "./context/AppContext";
+import { useApp } from "./context/useApp";
 import Navbar from "./components/Navbar";
 import MoneyTallyBar from "./components/MoneyTallyBar";
 import Dashboard from "./pages/Dashboard";

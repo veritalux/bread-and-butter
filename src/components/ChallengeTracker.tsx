@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { X, CheckCircle, Calendar, ArrowRight } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 import type { Challenge } from "../types/challenge";
-import { getIcon } from "../data/sampleData";
+import { ChallengeIcon } from "../data/sampleData";
 
 interface Props {
   challenge: Challenge;
@@ -14,7 +14,6 @@ export default function ChallengeTracker({ challenge, onClose }: Props) {
   const [amount, setAmount] = useState("5");
   const [note, setNote] = useState("");
   const progress = Math.min((challenge.saved / challenge.goal) * 100, 100);
-  const Icon = getIcon(challenge.icon);
 
   const handleLog = () => {
     const numAmount = Number(amount) || 5;
@@ -34,7 +33,7 @@ export default function ChallengeTracker({ challenge, onClose }: Props) {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-[var(--color-glow)] flex items-center justify-center">
-                <Icon size={20} className="text-[var(--color-primary)]" />
+                <ChallengeIcon name={challenge.icon} size={20} className="text-[var(--color-primary)]" />
               </div>
               <div>
                 <h2 className="font-bold text-[var(--color-text-heading)]">{challenge.title}</h2>

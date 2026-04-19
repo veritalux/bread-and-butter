@@ -1,5 +1,5 @@
 import { DollarSign, Trophy, TrendingUp, Target } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 
 export default function StatsBar() {
   const { challenges } = useApp();
