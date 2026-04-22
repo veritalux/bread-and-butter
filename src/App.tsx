@@ -13,7 +13,7 @@ function LoadingScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
       <div className="text-center animate-fade-in">
-        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" className="w-12 h-12 mx-auto mb-3 animate-pulse" />
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" className="w-16 h-16 mx-auto mb-3 animate-pulse" />
         <p className="text-sm text-[var(--color-text-muted)]">Loading...</p>
       </div>
     </div>
