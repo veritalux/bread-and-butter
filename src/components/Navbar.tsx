@@ -58,7 +58,7 @@ export default function Navbar() {
           to={isMod ? "/moderator" : "/"}
           className="flex items-center gap-2 text-[var(--color-text-heading)] font-bold text-lg no-underline"
         >
-          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="w-7 h-7" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" className="w-7 h-7" />
           Bread &amp; Butter
         </Link>
 
