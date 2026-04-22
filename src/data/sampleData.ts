@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { Coffee, ShoppingBag, UtensilsCrossed, Zap, ShoppingCart, HelpCircle } from "lucide-react";
 import type { LucideIcon, LucideProps } from "lucide-react";
-import type { Challenge, ChallengeTemplate } from "../types/challenge";
+import type { ChallengeTemplate } from "../types/challenge";
 
 const iconMap: Record<string, LucideIcon> = {
   Coffee,
@@ -18,58 +18,6 @@ export function getIcon(name: string): LucideIcon {
 export function ChallengeIcon({ name, ...props }: { name: string } & LucideProps) {
   return createElement(iconMap[name] ?? HelpCircle, props);
 }
-
-export const sampleChallenges: Challenge[] = [
-  {
-    id: "1",
-    title: "Coffee Cutback",
-    description: "Skip the daily latte and redirect to investments",
-    icon: "Coffee",
-    saved: 18,
-    goal: 50,
-    daysLeft: 12,
-    totalDays: 30,
-    investTo: "Index Fund",
-    category: "recommended",
-    logs: [
-      { date: "2026-04-10", aligned: true, amount: 5 },
-      { date: "2026-04-11", aligned: true, amount: 5 },
-      { date: "2026-04-13", aligned: true, amount: 8 },
-    ],
-  },
-  {
-    id: "2",
-    title: "No Impulse Buys",
-    description: "Wait 24hrs before any non-essential purchase",
-    icon: "ShoppingBag",
-    saved: 45,
-    goal: 100,
-    daysLeft: 8,
-    totalDays: 21,
-    investTo: "Savings Account",
-    category: "recommended",
-    logs: [
-      { date: "2026-04-08", aligned: true, amount: 15 },
-      { date: "2026-04-10", aligned: true, amount: 30 },
-    ],
-  },
-  {
-    id: "3",
-    title: "Meal Prep Week",
-    description: "Cook at home instead of eating out",
-    icon: "UtensilsCrossed",
-    saved: 32,
-    goal: 75,
-    daysLeft: 5,
-    totalDays: 14,
-    investTo: "Emergency Fund",
-    category: "recommended",
-    logs: [
-      { date: "2026-04-09", aligned: true, amount: 12 },
-      { date: "2026-04-11", aligned: true, amount: 20 },
-    ],
-  },
-];
 
 export const challengeTemplates: ChallengeTemplate[] = [
   {

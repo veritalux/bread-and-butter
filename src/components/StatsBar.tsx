@@ -4,18 +4,31 @@ import { useApp } from "../context/useApp";
 export default function StatsBar() {
   const { challenges } = useApp();
 
-  const totalSaved = challenges.reduce((sum, c) => sum + c.saved, 0);
+  const currentYear = new Date().getFullYear();
+  const savedThisYear = challenges.reduce(
+    (sum, c) =>
+      sum +
+      c.logs
+        .filter((l) => new Date(l.date).getFullYear() === currentYear)
+        .reduce((s, l) => s + l.amount, 0),
+    0
+  );
+
   const completedCount = challenges.filter((c) => c.saved >= c.goal).length;
-  const hitRate = challenges.length > 0
-    ? Math.round((challenges.reduce((sum, c) => sum + c.logs.filter(l => l.aligned).length, 0) /
-        Math.max(challenges.reduce((sum, c) => sum + c.logs.length, 0), 1)) * 100)
-    : 0;
+  const totalSaved = challenges.reduce((sum, c) => sum + c.saved, 0);
+
+  const totalLogs = challenges.reduce((sum, c) => sum + c.logs.length, 0);
+  const alignedLogs = challenges.reduce(
+    (sum, c) => sum + c.logs.filter((l) => l.aligned).length,
+    0
+  );
+  const hitRate = totalLogs > 0 ? Math.round((alignedLogs / totalLogs) * 100) : 0;
 
   const stats = [
-    { label: "Saved This Year", value: `$${(totalSaved * 12).toLocaleString()}`, change: "+12.5%", icon: DollarSign },
+    { label: "Saved This Year", value: `$${savedThisYear.toLocaleString()}`, icon: DollarSign },
     { label: "Challenges Done", value: `${completedCount}`, icon: Trophy },
-    { label: "Redirected This Mo.", value: `$${totalSaved}`, icon: TrendingUp },
-    { label: "Goal Hit Rate", value: `${hitRate || 89}%`, icon: Target },
+    { label: "Total Redirected", value: `$${totalSaved}`, icon: TrendingUp },
+    { label: "Goal Hit Rate", value: totalLogs > 0 ? `${hitRate}%` : "—", icon: Target },
   ];
 
   return (
@@ -33,12 +46,7 @@ export default function StatsBar() {
                 <Icon size={16} className="text-[var(--color-primary)]" />
                 <span className="text-xs text-[var(--color-text-muted)]">{stat.label}</span>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold text-[var(--color-text-heading)]">{stat.value}</span>
-                {stat.change && (
-                  <span className="text-xs font-medium text-[var(--color-primary)]">{stat.change}</span>
-                )}
-              </div>
+              <span className="text-xl font-bold text-[var(--color-text-heading)]">{stat.value}</span>
             </div>
           );
         })}

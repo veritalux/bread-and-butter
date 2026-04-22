@@ -6,7 +6,7 @@ import ChallengeTracker from "./ChallengeTracker";
 import StartChallengeModal from "./StartChallengeModal";
 
 export default function ChallengesSection() {
-  const { challenges, logProgress } = useApp();
+  const { challenges } = useApp();
   const [trackingId, setTrackingId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const activeChallenges = challenges.filter((c) => c.saved < c.goal);
@@ -32,9 +32,7 @@ export default function ChallengesSection() {
               <ChallengeCard
                 challenge={c}
                 onClick={() => setTrackingId(c.id)}
-                onLogProgress={() => {
-                  logProgress(c.id, 5);
-                }}
+                onLogProgress={() => setTrackingId(c.id)}
               />
             </div>
           ))}

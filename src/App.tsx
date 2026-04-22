@@ -9,9 +9,21 @@ import Challenges from "./pages/Challenges";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import Login from "./pages/Login";
 
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
+      <div className="text-center animate-fade-in">
+        <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="w-12 h-12 mx-auto mb-3 animate-pulse" />
+        <p className="text-sm text-[var(--color-text-muted)]">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
 function RequireAuth({ children, role }: { children: ReactNode; role?: "user" | "moderator" }) {
-  const { currentUser } = useApp();
+  const { currentUser, loading } = useApp();
   const location = useLocation();
+  if (loading) return <LoadingScreen />;
   if (!currentUser) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
@@ -34,6 +46,9 @@ function Chrome({ children }: { children: ReactNode }) {
 }
 
 function AppRoutes() {
+  const { loading } = useApp();
+  if (loading) return <LoadingScreen />;
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -68,7 +83,7 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/bread-and-butter/">
       <AppProvider>
         <AppRoutes />
       </AppProvider>

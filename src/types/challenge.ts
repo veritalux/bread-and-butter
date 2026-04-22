@@ -5,11 +5,19 @@ export interface Challenge {
   icon: string;
   saved: number;
   goal: number;
-  daysLeft: number;
+  startDate: string;
   totalDays: number;
+  daysLeft?: number;
   investTo: string;
   category: "recommended" | "trending" | "purchase";
   logs: ProgressLog[];
+}
+
+export function computeDaysLeft(startDate: string, totalDays: number): number {
+  const start = new Date(startDate);
+  const now = new Date();
+  const elapsed = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, totalDays - elapsed);
 }
 
 export interface ProgressLog {

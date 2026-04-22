@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, ArrowLeft, Rocket } from "lucide-react";
 import { useApp } from "../context/useApp";
-import { challengeTemplates, getIcon } from "../data/sampleData";
+import { challengeTemplates, ChallengeIcon } from "../data/sampleData";
 import type { ChallengeTemplate } from "../types/challenge";
 
 interface Props {
@@ -48,7 +48,7 @@ export default function StartChallengeModal({ isOpen, onClose }: Props) {
       icon: selected.icon,
       saved: 0,
       goal: numGoal,
-      daysLeft: numDays,
+      startDate: new Date().toISOString().slice(0, 10),
       totalDays: numDays,
       investTo,
       category: selected.category,
@@ -103,9 +103,7 @@ export default function StartChallengeModal({ isOpen, onClose }: Props) {
                     {cat === "trending" && "🔥 "}{categoryLabels[cat].label}
                   </h3>
                   <div className="space-y-2">
-                    {grouped[cat].map((c) => {
-                      const Icon = getIcon(c.icon);
-                      return (
+                    {grouped[cat].map((c) => (
                         <button
                           key={c.id}
                           onClick={() => {
@@ -116,15 +114,14 @@ export default function StartChallengeModal({ isOpen, onClose }: Props) {
                           className="w-full group flex items-center gap-3 p-3 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-primary)]/40 transition-all text-left cursor-pointer bg-transparent"
                         >
                           <div className="w-9 h-9 rounded-lg bg-[var(--color-glow)] flex items-center justify-center shrink-0">
-                            <Icon size={18} className="text-[var(--color-primary)]" />
+                            <ChallengeIcon name={c.icon} size={18} className="text-[var(--color-primary)]" />
                           </div>
                           <div>
                             <p className="font-medium text-sm text-[var(--color-text-heading)]">{c.title}</p>
                             <p className="text-xs text-[var(--color-text-muted)]">{c.description}</p>
                           </div>
                         </button>
-                      );
-                    })}
+                    ))}
                   </div>
                 </div>
               ))}

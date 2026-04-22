@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   AlertTriangle,
@@ -13,9 +13,13 @@ import {
   Send,
   FileText,
 } from "lucide-react";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../lib/firebase";
 import { useApp } from "../context/useApp";
 import { ChallengeIcon } from "../data/sampleData";
 import { getActivityStatus, getDaysSinceActive } from "../types/user";
+import { computeDaysLeft } from "../types/challenge";
+import type { Challenge } from "../types/challenge";
 import type { AppUser, ActivityStatus, CheckInThreshold } from "../types/user";
 
 const statusConfig: Record<ActivityStatus, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
@@ -100,6 +104,7 @@ function UserRow({ user }: { user: AppUser }) {
   const [showCheckInForm, setShowCheckInForm] = useState(false);
   const [checkInNote, setCheckInNote] = useState("");
   const [showLogs, setShowLogs] = useState(false);
+  const [userChallenges, setUserChallenges] = useState<Challenge[]>([]);
 
   const threshold = getThreshold(user.id);
   const status = getActivityStatus(user.lastActiveDate, threshold);
@@ -108,8 +113,22 @@ function UserRow({ user }: { user: AppUser }) {
   const StatusIcon = config.icon;
   const logs = getCheckInLogs(user.id);
 
-  const totalSaved = user.challenges.reduce((sum, c) => sum + c.saved, 0);
-  const totalGoal = user.challenges.reduce((sum, c) => sum + c.goal, 0);
+  useEffect(() => {
+    if (!expanded) return;
+    getDocs(collection(db, "users", user.id, "challenges")).then((snap) => {
+      setUserChallenges(snap.docs.map((d) => {
+        const data = d.data() as Omit<Challenge, "id" | "daysLeft">;
+        return {
+          ...data,
+          id: d.id,
+          daysLeft: data.startDate ? computeDaysLeft(data.startDate, data.totalDays) : 0,
+        } as Challenge;
+      }));
+    });
+  }, [expanded, user.id]);
+
+  const totalSaved = userChallenges.reduce((sum, c) => sum + c.saved, 0);
+  const totalGoal = userChallenges.reduce((sum, c) => sum + c.goal, 0);
   const overallProgress = totalGoal > 0 ? Math.round((totalSaved / totalGoal) * 100) : 0;
 
   const handleCheckIn = () => {
@@ -154,7 +173,7 @@ function UserRow({ user }: { user: AppUser }) {
               ? "Last active yesterday"
               : `Last active ${daysSince} days ago`}
             {" · "}
-            {user.challenges.length} challenge{user.challenges.length !== 1 && "s"}
+            {userChallenges.length} challenge{userChallenges.length !== 1 && "s"}
           </p>
         </div>
 
@@ -234,7 +253,7 @@ function UserRow({ user }: { user: AppUser }) {
           {/* Challenges */}
           <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Challenges</h4>
           <div className="space-y-2 mb-4">
-            {user.challenges.map((c) => {
+            {userChallenges.map((c) => {
               const prog = Math.min((c.saved / c.goal) * 100, 100);
               return (
                 <div key={c.id} className="flex items-center gap-3 bg-[var(--color-background)] rounded-lg p-3">

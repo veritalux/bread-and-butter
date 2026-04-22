@@ -11,9 +11,11 @@ export default function Login() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("user");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -22,24 +24,32 @@ export default function Login() {
     }
   }, [currentUser, navigate]);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSubmitting(true);
 
-    const res = mode === "login" ? login(email) : signUp({ name, email, role });
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      const res = mode === "login"
+        ? await login(email, password)
+        : await signUp({ name, email, password, role });
+
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const target = res.user.role === "moderator" ? "/moderator" : "/";
+      navigate(target, { replace: true });
+    } finally {
+      setSubmitting(false);
     }
-    const target = res.user.role === "moderator" ? "/moderator" : "/";
-    navigate(target, { replace: true });
   };
 
   return (
     <main className="min-h-[calc(100svh-3.5rem)] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="text-center mb-6 animate-fade-in">
-          <div className="text-4xl mb-2">🍞</div>
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="w-10 h-10 mx-auto mb-2" />
           <h1 className="text-3xl font-bold text-[var(--color-text-heading)]">Bread &amp; Butter</h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
             {mode === "login" ? "Sign in to track your challenges." : "Create your account."}
@@ -80,7 +90,7 @@ export default function Login() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                  placeholder="Alex Rivera"
+                  placeholder="Your Name"
                   autoComplete="name"
                 />
               </div>
@@ -95,6 +105,18 @@ export default function Login() {
                 className="w-full px-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                 placeholder="you@example.com"
                 autoComplete="email"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                placeholder={mode === "signup" ? "At least 6 characters" : "Your password"}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
               />
             </div>
 
@@ -138,22 +160,13 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold hover:brightness-110 transition-all cursor-pointer border-0"
+              disabled={submitting}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold hover:brightness-110 transition-all cursor-pointer border-0 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {mode === "login" ? <LogIn size={18} /> : <UserPlus size={18} />}
-              {mode === "login" ? "Sign In" : "Create Account"}
+              {submitting ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
             </button>
           </form>
-
-          {mode === "login" && (
-            <div className="mt-5 pt-4 border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
-              <p className="font-medium text-[var(--color-text-heading)] mb-2">Try a demo account:</p>
-              <ul className="space-y-1">
-                <li><button type="button" onClick={() => setEmail("sarah@example.com")} className="underline bg-transparent border-0 p-0 text-[var(--color-primary)] cursor-pointer">sarah@example.com</button> — user</li>
-                <li><button type="button" onClick={() => setEmail("coach@breadandbutter.com")} className="underline bg-transparent border-0 p-0 text-[var(--color-primary)] cursor-pointer">coach@breadandbutter.com</button> — moderator</li>
-              </ul>
-            </div>
-          )}
         </div>
       </div>
     </main>

@@ -1,269 +1,329 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  onSnapshot,
+  addDoc,
+  getDocs,
+} from "firebase/firestore";
+import { auth, db } from "../lib/firebase";
 import type { Challenge, UserFinances } from "../types/challenge";
+import { computeDaysLeft } from "../types/challenge";
 import type { AppUser, CheckInThreshold, CheckInLog } from "../types/user";
 import { makeInitials, DEFAULT_THRESHOLD } from "../types/user";
-import { sampleChallenges } from "../data/sampleData";
-import { sampleUsers } from "../data/sampleUsers";
 import { AppContext } from "./appContextDef";
-import type { AppContextType, Theme } from "./appContextDef";
+import type { Theme } from "./appContextDef";
 import type { FontChoice } from "../types/fonts";
 
 const DEFAULT_FINANCES: UserFinances = { weeklyIncome: 1000, taxRate: 22, weeklyInvestment: 100 };
-
-const NEW_USERS_KEY = "bb-new-users";
-const CURRENT_USER_KEY = "bb-current-user";
 const THEME_KEY = "bb-theme";
 const FONT_KEY = "bb-font";
 
-type StoredUser = Omit<AppUser, "challenges">;
-
-function loadNewUsers(): StoredUser[] {
-  const stored = localStorage.getItem(NEW_USERS_KEY);
-  if (!stored) return [];
-  try {
-    return JSON.parse(stored) as StoredUser[];
-  } catch {
-    return [];
-  }
+function toDateStr(d: Date = new Date()): string {
+  return d.toISOString().slice(0, 10);
 }
 
-function saveNewUsers(users: StoredUser[]) {
-  localStorage.setItem(NEW_USERS_KEY, JSON.stringify(users));
+function yesterday(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return toDateStr(d);
 }
 
-function mergedUsers(newUsers: StoredUser[]): AppUser[] {
-  const extras: AppUser[] = newUsers.map((u) => ({ ...u, challenges: [] }));
-  return [...sampleUsers, ...extras];
+async function loadUserDoc(uid: string): Promise<AppUser | null> {
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) return null;
+  return { id: uid, ...snap.data() } as AppUser;
 }
 
-function userChallengesKey(userId: string) {
-  return `bb-challenges-${userId}`;
+async function loadChallenges(uid: string): Promise<Challenge[]> {
+  const snap = await getDocs(collection(db, "users", uid, "challenges"));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Challenge);
 }
-function userFinancesKey(userId: string) {
-  return `bb-finances-${userId}`;
+
+async function loadCheckInLogs(userId: string): Promise<CheckInLog[]> {
+  const snap = await getDocs(collection(db, "users", userId, "checkInLogs"));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as CheckInLog);
+}
+
+async function loadThresholds(moderatorId: string): Promise<Record<string, CheckInThreshold>> {
+  const snap = await getDocs(collection(db, "moderatorSettings", moderatorId, "thresholds"));
+  const result: Record<string, CheckInThreshold> = {};
+  snap.docs.forEach((d) => {
+    result[d.id] = d.data() as CheckInThreshold;
+  });
+  return result;
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem(THEME_KEY) as Theme) || "dark";
-  });
-  const [font, setFontState] = useState<FontChoice>(() => {
-    return (localStorage.getItem(FONT_KEY) as FontChoice) || "sans";
-  });
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [allUsers, setAllUsers] = useState<AppUser[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [finances, setFinancesState] = useState<UserFinances>(DEFAULT_FINANCES);
+  const [thresholds, setThresholds] = useState<Record<string, CheckInThreshold>>({});
+  const [checkInLogs, setCheckInLogs] = useState<Record<string, CheckInLog[]>>({});
 
-  const [newUsers, setNewUsers] = useState<StoredUser[]>(() => loadNewUsers());
-
-  const allUsers = mergedUsers(newUsers);
-
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
-    const id = localStorage.getItem(CURRENT_USER_KEY);
-    if (!id) return null;
-    return mergedUsers(loadNewUsers()).find((u) => u.id === id) ?? null;
-  });
-
-  const [challenges, setChallenges] = useState<Challenge[]>(() => {
-    const id = localStorage.getItem(CURRENT_USER_KEY);
-    if (!id) return [];
-    const stored = localStorage.getItem(userChallengesKey(id));
-    if (stored) {
-      try {
-        return JSON.parse(stored) as Challenge[];
-      } catch {
-        // fall through
-      }
-    }
-    const user = mergedUsers(loadNewUsers()).find((u) => u.id === id);
-    if (user && user.role === "user") {
-      return user.challenges.length > 0 ? user.challenges : sampleChallenges;
-    }
-    return [];
-  });
-
-  const [finances, setFinancesState] = useState<UserFinances>(() => {
-    const id = localStorage.getItem(CURRENT_USER_KEY);
-    if (!id) return DEFAULT_FINANCES;
-    const stored = localStorage.getItem(userFinancesKey(id));
-    if (stored) {
-      try {
-        return JSON.parse(stored) as UserFinances;
-      } catch {
-        // fall through
-      }
-    }
-    return DEFAULT_FINANCES;
-  });
+  const [theme, setThemeState] = useState<Theme>(
+    () => (localStorage.getItem(THEME_KEY) as Theme) || "dark"
+  );
+  const [font, setFontState] = useState<FontChoice>(
+    () => (localStorage.getItem(FONT_KEY) as FontChoice) || "sans"
+  );
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
     localStorage.setItem(THEME_KEY, t);
   };
-
   const setFont = (f: FontChoice) => {
     setFontState(f);
     localStorage.setItem(FONT_KEY, f);
   };
 
-  const setFinances = (f: UserFinances) => {
-    setFinancesState(f);
-    if (currentUser) {
-      localStorage.setItem(userFinancesKey(currentUser.id), JSON.stringify(f));
-    }
-  };
-
-  // --- Thresholds (per-user, moderator-set) ---
-  const [thresholds, setThresholds] = useState<Record<string, CheckInThreshold>>(() => {
-    const stored = localStorage.getItem("bb-thresholds");
-    if (stored) { try { return JSON.parse(stored); } catch { /* fall through */ } }
-    return {};
-  });
-
-  const getThreshold = (userId: string): CheckInThreshold =>
-    thresholds[userId] ?? DEFAULT_THRESHOLD;
-
-  const setThreshold = (userId: string, t: CheckInThreshold) => {
-    setThresholds((prev) => {
-      const next = { ...prev, [userId]: t };
-      localStorage.setItem("bb-thresholds", JSON.stringify(next));
-      return next;
-    });
-  };
-
-  // --- Check-in logs (per-user) ---
-  const [checkInLogs, setCheckInLogs] = useState<Record<string, CheckInLog[]>>(() => {
-    const stored = localStorage.getItem("bb-checkin-logs");
-    if (stored) { try { return JSON.parse(stored); } catch { /* fall through */ } }
-    return {};
-  });
-
-  const getCheckInLogs = (userId: string): CheckInLog[] =>
-    checkInLogs[userId] ?? [];
-
-  const addCheckInLog = (userId: string, note: string) => {
-    setCheckInLogs((prev) => {
-      const entry: CheckInLog = {
-        id: `cl-${Date.now()}`,
-        date: new Date().toISOString(),
-        note,
-      };
-      const next = { ...prev, [userId]: [...(prev[userId] ?? []), entry] };
-      localStorage.setItem("bb-checkin-logs", JSON.stringify(next));
-      return next;
-    });
-  };
-
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
-
   useEffect(() => {
     document.documentElement.setAttribute("data-font", font);
   }, [font]);
 
+  // --- Auth state listener ---
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(userChallengesKey(currentUser.id), JSON.stringify(challenges));
-    }
-  }, [challenges, currentUser]);
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userDoc = await loadUserDoc(firebaseUser.uid);
+        if (userDoc) {
+          setCurrentUser(userDoc);
+          const userChallenges = await loadChallenges(firebaseUser.uid);
+          setChallenges(userChallenges);
+          // Load finances from user doc
+          const finSnap = await getDoc(doc(db, "users", firebaseUser.uid, "settings", "finances"));
+          if (finSnap.exists()) {
+            setFinancesState(finSnap.data() as UserFinances);
+          }
+          // If moderator, load thresholds
+          if (userDoc.role === "moderator") {
+            const t = await loadThresholds(firebaseUser.uid);
+            setThresholds(t);
+          }
+        }
+      } else {
+        setCurrentUser(null);
+        setChallenges([]);
+        setFinancesState(DEFAULT_FINANCES);
+      }
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
 
-  const addChallenge = (c: Challenge) => {
-    setChallenges((prev) => [c, ...prev]);
+  // --- Real-time listener for all users (moderator needs this) ---
+  useEffect(() => {
+    if (!currentUser) return;
+    const q = currentUser.role === "moderator"
+      ? query(collection(db, "users"), where("role", "==", "user"))
+      : collection(db, "users");
+
+    const unsub = onSnapshot(q, (snap) => {
+      const users = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as AppUser);
+      setAllUsers(users);
+    });
+    return unsub;
+  }, [currentUser]);
+
+  // --- Load check-in logs for all users when moderator ---
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== "moderator") return;
+
+    async function loadAllCheckIns() {
+      const usersSnap = await getDocs(query(collection(db, "users"), where("role", "==", "user")));
+      const logs: Record<string, CheckInLog[]> = {};
+      for (const userDoc of usersSnap.docs) {
+        logs[userDoc.id] = await loadCheckInLogs(userDoc.id);
+      }
+      setCheckInLogs(logs);
+    }
+    loadAllCheckIns();
+  }, [currentUser]);
+
+  // Challenges with computed daysLeft
+  const challengesWithDaysLeft = challenges.map((c) => ({
+    ...c,
+    daysLeft: c.startDate ? computeDaysLeft(c.startDate, c.totalDays) : 0,
+  }));
+
+  // --- Auth functions ---
+  const login = async (email: string, password: string) => {
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await loadUserDoc(cred.user.uid);
+      if (!userDoc) return { ok: false as const, error: "User profile not found." };
+      setCurrentUser(userDoc);
+      const userChallenges = await loadChallenges(cred.user.uid);
+      setChallenges(userChallenges);
+      return { ok: true as const, user: userDoc };
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/user-not-found" || code === "auth/invalid-credential") {
+        return { ok: false as const, error: "Invalid email or password." };
+      }
+      if (code === "auth/wrong-password") {
+        return { ok: false as const, error: "Invalid email or password." };
+      }
+      return { ok: false as const, error: "Something went wrong. Please try again." };
+    }
   };
 
-  const logProgress = (challengeId: string, amount: number, note?: string) => {
+  const signUp = async ({ name, email, password, role }: { name: string; email: string; password: string; role: string }) => {
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const today = toDateStr();
+      const newUser: AppUser = {
+        id: cred.user.uid,
+        name: name.trim(),
+        initials: makeInitials(name),
+        email: email.trim().toLowerCase(),
+        role: role as AppUser["role"],
+        joinedDate: today,
+        lastActiveDate: today,
+        streak: 0,
+        longestStreak: 0,
+      };
+      // Write user doc (omit id — it's the doc key)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _, ...userData } = newUser;
+      await setDoc(doc(db, "users", cred.user.uid), userData);
+      setCurrentUser(newUser);
+      setChallenges([]);
+      return { ok: true as const, user: newUser };
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/email-already-in-use") {
+        return { ok: false as const, error: "An account with that email already exists." };
+      }
+      if (code === "auth/weak-password") {
+        return { ok: false as const, error: "Password must be at least 6 characters." };
+      }
+      return { ok: false as const, error: "Something went wrong. Please try again." };
+    }
+  };
+
+  const logout = async () => {
+    await signOut(auth);
+    setCurrentUser(null);
+    setChallenges([]);
+    setAllUsers([]);
+    setFinancesState(DEFAULT_FINANCES);
+  };
+
+  // --- Challenge functions ---
+  const addChallenge = async (c: Challenge) => {
+    if (!currentUser) return;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: _, ...data } = c;
+    const ref = await addDoc(collection(db, "users", currentUser.id, "challenges"), data);
+    setChallenges((prev) => [{ ...c, id: ref.id }, ...prev]);
+  };
+
+  const logProgress = async (challengeId: string, amount: number, note?: string) => {
+    if (!currentUser) return;
+    const challenge = challenges.find((c) => c.id === challengeId);
+    if (!challenge) return;
+
+    const newSaved = Math.min(challenge.saved + amount, challenge.goal);
+    const logEntry = { date: new Date().toISOString(), aligned: true, amount, note: note ?? "" };
+    const newLogs = [...challenge.logs, logEntry];
+
+    // Update challenge in Firestore
+    await updateDoc(doc(db, "users", currentUser.id, "challenges", challengeId), {
+      saved: newSaved,
+      logs: newLogs,
+    });
+
+    // Update local challenge state
     setChallenges((prev) =>
-      prev.map((c) => {
-        if (c.id !== challengeId) return c;
-        return {
-          ...c,
-          saved: Math.min(c.saved + amount, c.goal),
-          logs: [
-            ...c.logs,
-            { date: new Date().toISOString(), aligned: true, amount, note },
-          ],
-        };
-      })
+      prev.map((c) =>
+        c.id === challengeId ? { ...c, saved: newSaved, logs: newLogs } : c
+      )
+    );
+
+    // --- Streak logic ---
+    const today = toDateStr();
+    const lastActive = currentUser.lastActiveDate;
+    let newStreak = currentUser.streak;
+    if (lastActive === today) {
+      // Already logged today — keep streak, but start at 1 if it was 0
+      if (newStreak === 0) newStreak = 1;
+    } else if (lastActive === yesterday()) {
+      newStreak = currentUser.streak + 1;
+    } else {
+      newStreak = 1;
+    }
+    const newLongest = Math.max(currentUser.longestStreak, newStreak);
+
+    // Update user doc
+    await updateDoc(doc(db, "users", currentUser.id), {
+      lastActiveDate: today,
+      streak: newStreak,
+      longestStreak: newLongest,
+    });
+
+    setCurrentUser((prev) =>
+      prev ? { ...prev, lastActiveDate: today, streak: newStreak, longestStreak: newLongest } : prev
     );
   };
 
-  const loadUserData = (user: AppUser) => {
-    const storedChallenges = localStorage.getItem(userChallengesKey(user.id));
-    if (storedChallenges) {
-      try {
-        setChallenges(JSON.parse(storedChallenges));
-      } catch {
-        setChallenges(user.challenges ?? []);
-      }
-    } else if (user.role === "user") {
-      setChallenges(user.challenges.length > 0 ? user.challenges : sampleChallenges);
-    } else {
-      setChallenges([]);
+  // --- Finances ---
+  const setFinances = useCallback(async (f: UserFinances) => {
+    setFinancesState(f);
+    if (currentUser) {
+      await setDoc(doc(db, "users", currentUser.id, "settings", "finances"), f);
     }
+  }, [currentUser]);
 
-    const storedFin = localStorage.getItem(userFinancesKey(user.id));
-    if (storedFin) {
-      try {
-        setFinancesState(JSON.parse(storedFin));
-      } catch {
-        setFinancesState(DEFAULT_FINANCES);
-      }
-    } else {
-      setFinancesState(DEFAULT_FINANCES);
-    }
+  // --- Thresholds ---
+  const getThreshold = (userId: string): CheckInThreshold =>
+    thresholds[userId] ?? DEFAULT_THRESHOLD;
+
+  const setThreshold = async (userId: string, t: CheckInThreshold) => {
+    if (!currentUser) return;
+    await setDoc(doc(db, "moderatorSettings", currentUser.id, "thresholds", userId), t);
+    setThresholds((prev) => ({ ...prev, [userId]: t }));
   };
 
-  const login: AppContextType["login"] = (email) => {
-    const normalized = email.trim().toLowerCase();
-    if (!normalized) return { ok: false, error: "Email is required." };
-    const user = allUsers.find((u) => u.email.toLowerCase() === normalized);
-    if (!user) return { ok: false, error: "No account found for that email." };
-    setCurrentUser(user);
-    localStorage.setItem(CURRENT_USER_KEY, user.id);
-    loadUserData(user);
-    return { ok: true, user };
-  };
+  // --- Check-in logs ---
+  const getCheckInLogs = (userId: string): CheckInLog[] =>
+    checkInLogs[userId] ?? [];
 
-  const signUp: AppContextType["signUp"] = ({ name, email, role }) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const normalizedName = name.trim();
-    if (!normalizedName) return { ok: false, error: "Name is required." };
-    if (!normalizedEmail) return { ok: false, error: "Email is required." };
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      return { ok: false, error: "That doesn't look like a valid email." };
-    }
-    if (allUsers.some((u) => u.email.toLowerCase() === normalizedEmail)) {
-      return { ok: false, error: "An account with that email already exists." };
-    }
-    const stored: StoredUser = {
-      id: `${role === "moderator" ? "m" : "u"}-${Date.now()}`,
-      name: normalizedName,
-      initials: makeInitials(normalizedName),
-      email: normalizedEmail,
-      role,
-      joinedDate: new Date().toISOString().slice(0, 10),
-      lastActiveDate: new Date().toISOString().slice(0, 10),
-      streak: 0,
-      longestStreak: 0,
+  const addCheckInLog = async (userId: string, note: string) => {
+    if (!currentUser) return;
+    const entry = {
+      date: new Date().toISOString(),
+      note,
+      moderatorId: currentUser.id,
     };
-    const updated = [...newUsers, stored];
-    setNewUsers(updated);
-    saveNewUsers(updated);
-    const newUser: AppUser = { ...stored, challenges: [] };
-    setCurrentUser(newUser);
-    localStorage.setItem(CURRENT_USER_KEY, newUser.id);
-    loadUserData(newUser);
-    return { ok: true, user: newUser };
-  };
-
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem(CURRENT_USER_KEY);
-    setChallenges([]);
-    setFinancesState(DEFAULT_FINANCES);
+    const ref = await addDoc(collection(db, "users", userId, "checkInLogs"), entry);
+    const newLog: CheckInLog = { id: ref.id, ...entry };
+    setCheckInLogs((prev) => ({
+      ...prev,
+      [userId]: [...(prev[userId] ?? []), newLog],
+    }));
   };
 
   return (
     <AppContext.Provider
       value={{
+        loading,
         theme,
         setTheme,
         font,
@@ -273,7 +333,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         signUp,
         logout,
         allUsers,
-        challenges,
+        challenges: challengesWithDaysLeft,
         addChallenge,
         logProgress,
         finances,
@@ -288,4 +348,3 @@ export function AppProvider({ children }: { children: ReactNode }) {
     </AppContext.Provider>
   );
 }
-

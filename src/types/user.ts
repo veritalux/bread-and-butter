@@ -1,5 +1,3 @@
-import type { Challenge } from "./challenge";
-
 export type UserRole = "user" | "moderator";
 
 export type ActivityStatus = "active" | "warning" | "inactive";
@@ -14,7 +12,6 @@ export interface AppUser {
   lastActiveDate: string;
   streak: number;
   longestStreak: number;
-  challenges: Challenge[];
   moderatorId?: string;
 }
 
