@@ -49,7 +49,7 @@ export default function Login() {
     <main className="min-h-[calc(100svh-3.5rem)] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="text-center mb-6 animate-fade-in">
-          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" className="w-14 h-14 mx-auto mb-2" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" className="w-20 h-20 mx-auto mb-2" />
           <h1 className="text-3xl font-bold text-[var(--color-text-heading)]">Bread &amp; Butter</h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
             {mode === "login" ? "Sign in to track your challenges." : "Create your account."}
