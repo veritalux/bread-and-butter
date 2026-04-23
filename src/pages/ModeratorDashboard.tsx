@@ -397,6 +397,13 @@ export default function ModeratorDashboard() {
             </p>
           </div>
         </div>
+        {currentUser?.coachCode && (
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+            <span className="text-xs text-[var(--color-text-muted)]">Your coach code:</span>
+            <span className="text-sm font-bold text-[var(--color-primary)] tracking-wider">{currentUser.coachCode}</span>
+            <span className="text-xs text-[var(--color-text-muted)]">— share this with your users to sign up</span>
+          </div>
+        )}
       </div>
 
       {/* Summary cards */}

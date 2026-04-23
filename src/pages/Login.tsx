@@ -14,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("user");
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,7 +33,7 @@ export default function Login() {
     try {
       const res = mode === "login"
         ? await login(email, password)
-        : await signUp({ name, email, password, role });
+        : await signUp({ name, email, password, role, code });
 
       if (!res.ok) {
         setError(res.error);
@@ -149,6 +150,25 @@ export default function Login() {
                     Moderator
                   </button>
                 </div>
+              </div>
+            )}
+
+            {mode === "signup" && (
+              <div>
+                <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">
+                  {role === "moderator" ? "Moderator access code" : "Coach code"}
+                </label>
+                <input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                  placeholder={role === "moderator" ? "Enter access code" : "Enter your coach's code"}
+                />
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  {role === "moderator"
+                    ? "Required to create a moderator account."
+                    : "Your coach will give you this code."}
+                </p>
               </div>
             )}
 

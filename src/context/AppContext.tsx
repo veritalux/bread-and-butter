@@ -184,10 +184,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async ({ name, email, password, role }: { name: string; email: string; password: string; role: string }) => {
+  const signUp = async ({ name, email, password, role, code }: { name: string; email: string; password: string; role: string; code: string }) => {
     try {
+      const trimmedCode = code.trim();
+
+      if (role === "moderator") {
+        // Moderators need the master signup code
+        if (trimmedCode !== "BREADANDBUTTER2026") {
+          return { ok: false as const, error: "Invalid moderator access code." };
+        }
+      }
+
+      let moderatorId: string | undefined;
+      if (role === "user") {
+        // Users must enter a valid coach code — look up the moderator
+        const modQuery = query(collection(db, "users"), where("coachCode", "==", trimmedCode.toUpperCase()));
+        const modSnap = await getDocs(modQuery);
+        if (modSnap.empty) {
+          return { ok: false as const, error: "Invalid coach code. Ask your coach for their code." };
+        }
+        moderatorId = modSnap.docs[0].id;
+      }
+
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       const today = toDateStr();
+
+      // Generate a unique coach code for moderators
+      const coachCode = role === "moderator"
+        ? name.trim().split(/\s+/).pop()!.toUpperCase().slice(0, 4) + cred.user.uid.slice(0, 4).toUpperCase()
+        : undefined;
+
       const newUser: AppUser = {
         id: cred.user.uid,
         name: name.trim(),
@@ -198,6 +224,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         lastActiveDate: today,
         streak: 0,
         longestStreak: 0,
+        ...(moderatorId ? { moderatorId } : {}),
+        ...(coachCode ? { coachCode } : {}),
       };
       // Write user doc (omit id — it's the doc key)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -207,11 +235,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setChallenges([]);
       return { ok: true as const, user: newUser };
     } catch (err: unknown) {
-      const code = (err as { code?: string }).code;
-      if (code === "auth/email-already-in-use") {
+      const errCode = (err as { code?: string }).code;
+      if (errCode === "auth/email-already-in-use") {
         return { ok: false as const, error: "An account with that email already exists." };
       }
-      if (code === "auth/weak-password") {
+      if (errCode === "auth/weak-password") {
         return { ok: false as const, error: "Password must be at least 6 characters." };
       }
       return { ok: false as const, error: "Something went wrong. Please try again." };

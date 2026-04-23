@@ -13,6 +13,7 @@ export interface AppUser {
   streak: number;
   longestStreak: number;
   moderatorId?: string;
+  coachCode?: string;
 }
 
 export interface CheckInThreshold {

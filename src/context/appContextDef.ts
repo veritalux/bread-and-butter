@@ -10,6 +10,7 @@ export interface SignUpInput {
   email: string;
   password: string;
   role: UserRole;
+  code: string;
 }
 
 export interface AppContextType {
