@@ -15,7 +15,7 @@ export default function ChallengesSection() {
 
   return (
     <>
-      <section className="max-w-5xl mx-auto px-4 mb-10">
+      <section className="mb-10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-[var(--color-text-heading)]">Active Challenges</h2>
           <button

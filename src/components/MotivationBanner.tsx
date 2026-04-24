@@ -25,7 +25,7 @@ export default function MotivationBanner() {
   const hasData = avgDaily > 0;
 
   return (
-    <section className="max-w-5xl mx-auto px-4 mb-16">
+    <section className="mb-16">
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-center animate-fade-in">
         <Lightbulb size={24} className="text-[var(--color-accent)] mx-auto mb-3" />
         {hasData ? (

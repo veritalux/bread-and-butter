@@ -32,7 +32,7 @@ export default function StatsBar() {
   ];
 
   return (
-    <section className="max-w-5xl mx-auto px-4 -mt-4 mb-8">
+    <section className="mb-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {stats.map((stat, i) => {
           const Icon = stat.icon;

@@ -8,7 +8,7 @@ interface Props {
 
 export default function AccountabilityBanner({ streak, longestStreak, moderatorName = "your coach" }: Props) {
   return (
-    <div className="max-w-5xl mx-auto px-4 mb-6">
+    <div className="mb-6">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         {/* Streak card */}
         <div className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 flex items-center gap-4">
