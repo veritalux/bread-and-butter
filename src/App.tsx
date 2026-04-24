@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Challenges from "./pages/Challenges";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import DailyLog from "./pages/DailyLog";
+import HowItWorksPage from "./pages/HowItWorksPage";
 import Login from "./pages/Login";
 import DisclaimerModal from "./components/DisclaimerModal";
 import OnboardingModal from "./components/OnboardingModal";
@@ -85,6 +86,14 @@ function AppRoutes() {
         element={
           <RequireAuth role="user">
             <Chrome><Challenges /></Chrome>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/how-it-works"
+        element={
+          <RequireAuth role="user">
+            <Chrome><HowItWorksPage /></Chrome>
           </RequireAuth>
         }
       />

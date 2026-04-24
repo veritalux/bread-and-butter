@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sun, Moon, BookOpen, Type, LogOut, Check } from "lucide-react";
 import { useApp } from "../context/useApp";
 import { FONT_LABELS, type FontChoice } from "../types/fonts";
+import NotificationBell from "./NotificationBell";
 
 const FONT_ORDER: FontChoice[] = ["sans", "serif", "mono", "rounded", "display"];
 
@@ -32,7 +33,7 @@ export default function Navbar() {
     return (
       <Link
         to={to}
-        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+        className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
           active
             ? "text-[var(--color-primary)] bg-[var(--color-glow)]"
             : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
@@ -59,13 +60,14 @@ export default function Navbar() {
           className="flex items-center gap-2 text-[var(--color-text-heading)] font-bold text-lg no-underline"
         >
           <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" className="w-11 h-11" />
-          Bread &amp; Butter
+          <span className="hidden sm:inline">Bread &amp; Butter</span>
         </Link>
 
         <div className="flex items-center gap-1">
           {isUser && navLink("/", "Dashboard")}
           {isUser && navLink("/daily-log", "Daily Log")}
           {isUser && navLink("/challenges", "Challenges")}
+          {isUser && navLink("/how-it-works", "How It Works")}
           {isMod && navLink("/moderator", "Moderator")}
 
           {/* Font selector */}
@@ -109,6 +111,7 @@ export default function Navbar() {
 
           {currentUser ? (
             <>
+              {isUser && <NotificationBell />}
               <div
                 className="ml-2 w-8 h-8 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary-foreground)] text-xs font-bold"
                 title={`${currentUser.name} · ${currentUser.email}`}

@@ -1,18 +1,31 @@
 import { useState } from "react";
-import { Target, Trophy, TrendingUp } from "lucide-react";
+import { Target, Trophy, TrendingUp, Sparkles, Rocket } from "lucide-react";
 import { useApp } from "../context/useApp";
+import { challengeTemplates, goalToTemplates, ChallengeIcon } from "../data/sampleData";
 import ChallengeCard from "../components/ChallengeCard";
 import ChallengeTracker from "../components/ChallengeTracker";
+import StartChallengeModal from "../components/StartChallengeModal";
 
 export default function Challenges() {
-  const { challenges } = useApp();
+  const { challenges, onboardingData } = useApp();
   const [trackingId, setTrackingId] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
   const active = challenges.filter((c) => c.saved < c.goal);
   const completed = challenges.filter((c) => c.saved >= c.goal);
   const totalRedirected = challenges.reduce((sum, c) => sum + c.saved, 0);
-
   const trackedChallenge = trackingId ? challenges.find((c) => c.id === trackingId) : null;
+
+  // Build recommended templates from user goals
+  const recommendedIds = new Set<string>();
+  if (onboardingData?.goals) {
+    for (const goal of onboardingData.goals) {
+      const templates = goalToTemplates[goal];
+      if (templates) templates.forEach((id) => recommendedIds.add(id));
+    }
+  }
+  const recommended = challengeTemplates.filter((t) => recommendedIds.has(t.id));
+  const allTemplates = challengeTemplates.filter((t) => !recommendedIds.has(t.id));
 
   const quickStats = [
     { label: "Active", value: active.length.toString(), icon: Target, color: "var(--color-primary)" },
@@ -52,6 +65,34 @@ export default function Challenges() {
         })}
       </div>
 
+      {/* Recommended for You */}
+      {recommended.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles size={18} className="text-[var(--color-primary)]" />
+            <h2 className="text-lg font-semibold text-[var(--color-text-heading)]">Recommended for You</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {recommended.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-3 p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-primary)]/30 transition-all text-left cursor-pointer w-full"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[var(--color-glow)] flex items-center justify-center shrink-0">
+                  <ChallengeIcon name={t.icon} size={20} className="text-[var(--color-primary)]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-[var(--color-text-heading)]">{t.title}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] truncate">{t.description}</p>
+                </div>
+                <Rocket size={14} className="text-[var(--color-primary)] shrink-0" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Active Challenges */}
       {active.length > 0 && (
         <section className="mb-8">
@@ -72,7 +113,7 @@ export default function Challenges() {
 
       {/* Completed Challenges */}
       {completed.length > 0 && (
-        <section>
+        <section className="mb-8">
           <h2 className="text-lg font-semibold text-[var(--color-text-heading)] mb-4">Completed</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {completed.map((c, i) => (
@@ -84,9 +125,38 @@ export default function Challenges() {
         </section>
       )}
 
+      {/* All Available Challenges */}
+      <section>
+        <h2 className="text-lg font-semibold text-[var(--color-text-heading)] mb-4">All Challenges</h2>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {(recommended.length > 0 ? allTemplates : challengeTemplates).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-3 p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-primary)]/30 transition-all text-left cursor-pointer w-full"
+            >
+              <div className="w-10 h-10 rounded-lg bg-[var(--color-glow)] flex items-center justify-center shrink-0">
+                <ChallengeIcon name={t.icon} size={20} className="text-[var(--color-primary)]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-[var(--color-text-heading)]">{t.title}</p>
+                <p className="text-xs text-[var(--color-text-muted)] truncate">{t.description}</p>
+              </div>
+              {t.tag && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-glow)] text-[var(--color-primary)]">
+                  {t.tag}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </section>
+
       {trackedChallenge && (
         <ChallengeTracker challenge={trackedChallenge} onClose={() => setTrackingId(null)} />
       )}
+
+      <StartChallengeModal isOpen={showModal} onClose={() => setShowModal(false)} />
     </main>
   );
 }

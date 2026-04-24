@@ -24,6 +24,7 @@ import type { AppUser, CheckInThreshold, CheckInLog } from "../types/user";
 import { makeInitials, DEFAULT_THRESHOLD } from "../types/user";
 import type { OnboardingData } from "../types/onboarding";
 import type { DailyLogEntry } from "../types/dailyLog";
+import type { UserNotification } from "../types/notification";
 import { AppContext } from "./appContextDef";
 import type { Theme } from "./appContextDef";
 import type { FontChoice } from "../types/fonts";
@@ -76,6 +77,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [thresholds, setThresholds] = useState<Record<string, CheckInThreshold>>({});
   const [checkInLogs, setCheckInLogs] = useState<Record<string, CheckInLog[]>>({});
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
 
   const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem(THEME_KEY) as Theme) || "dark"
@@ -164,6 +166,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCheckInLogs(logs);
     }
     loadAllCheckIns();
+  }, [currentUser]);
+
+  // --- Notifications listener for users ---
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== "user") return;
+    const unsub = onSnapshot(collection(db, "users", currentUser.id, "notifications"), (snap) => {
+      const notifs = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as UserNotification);
+      notifs.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      setNotifications(notifs);
+    });
+    return unsub;
   }, [currentUser]);
 
   // Challenges with computed daysLeft
@@ -358,6 +371,65 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  // --- Transfer ---
+  const requestTransfer = async (userId: string, toCoachCode: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!currentUser) return { ok: false, error: "Not logged in." };
+    // Look up target moderator
+    const modSnap = await getDocs(query(collection(db, "users"), where("coachCode", "==", toCoachCode.toUpperCase())));
+    if (modSnap.empty) return { ok: false, error: "No moderator found with that coach code." };
+    const targetMod = modSnap.docs[0];
+    if (targetMod.id === currentUser.id) return { ok: false, error: "That's your own coach code." };
+
+    const now = new Date().toISOString();
+    const targetModData = targetMod.data();
+    // Create transfer request
+    const transferRef = await addDoc(collection(db, "transferRequests"), {
+      userId,
+      fromModeratorId: currentUser.id,
+      toModeratorId: targetMod.id,
+      toModeratorName: targetModData.name,
+      status: "pending",
+      createdAt: now,
+    });
+    // Create notification for the user
+    await addDoc(collection(db, "users", userId, "notifications"), {
+      type: "transfer-request",
+      message: `Your coach ${currentUser.name} has requested to transfer you to ${targetModData.name}. Do you consent to them seeing and helping you with the financial data you have entered?`,
+      data: { transferRequestId: transferRef.id, toModeratorName: targetModData.name, toModeratorId: targetMod.id },
+      read: false,
+      createdAt: now,
+    });
+    return { ok: true };
+  };
+
+  const respondToTransfer = async (transferRequestId: string, accept: boolean) => {
+    if (!currentUser) return;
+    const transferSnap = await getDoc(doc(db, "transferRequests", transferRequestId));
+    if (!transferSnap.exists()) return;
+    const transfer = transferSnap.data();
+
+    const now = new Date().toISOString();
+    await updateDoc(doc(db, "transferRequests", transferRequestId), {
+      status: accept ? "accepted" : "rejected",
+      respondedAt: now,
+    });
+
+    if (accept) {
+      // Update user's moderatorId
+      await updateDoc(doc(db, "users", currentUser.id), { moderatorId: transfer.toModeratorId });
+      setCurrentUser((prev) => prev ? { ...prev, moderatorId: transfer.toModeratorId } : prev);
+    }
+
+    // Mark notification as read
+    const notifsSnap = await getDocs(collection(db, "users", currentUser.id, "notifications"));
+    for (const notifDoc of notifsSnap.docs) {
+      const data = notifDoc.data();
+      if (data.data?.transferRequestId === transferRequestId) {
+        await updateDoc(doc(db, "users", currentUser.id, "notifications", notifDoc.id), { read: true });
+      }
+    }
+  };
+
   // --- Onboarding ---
   const completeOnboarding = async (data: OnboardingData) => {
     if (!currentUser) return;
@@ -439,6 +511,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         completeOnboarding,
         saveDailyLog,
         loadDailyLog,
+        notifications,
+        requestTransfer,
+        respondToTransfer,
       }}
     >
       {children}

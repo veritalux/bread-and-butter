@@ -3,6 +3,7 @@ import type { Challenge, UserFinances } from "../types/challenge";
 import type { AppUser, UserRole, CheckInThreshold, CheckInLog } from "../types/user";
 import type { OnboardingData } from "../types/onboarding";
 import type { DailyLogEntry } from "../types/dailyLog";
+import type { UserNotification } from "../types/notification";
 import type { FontChoice } from "../types/fonts";
 
 export type Theme = "dark" | "light" | "sepia";
@@ -40,6 +41,9 @@ export interface AppContextType {
   completeOnboarding: (data: OnboardingData) => Promise<void>;
   saveDailyLog: (entry: DailyLogEntry) => Promise<void>;
   loadDailyLog: (date: string) => Promise<DailyLogEntry | null>;
+  notifications: UserNotification[];
+  requestTransfer: (userId: string, toModeratorCoachCode: string) => Promise<{ ok: boolean; error?: string }>;
+  respondToTransfer: (transferRequestId: string, accept: boolean) => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);

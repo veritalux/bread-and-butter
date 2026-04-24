@@ -86,3 +86,13 @@ export const challengeTemplates: ChallengeTemplate[] = [
     ],
   },
 ];
+
+// Map onboarding goals to recommended challenge template IDs
+export const goalToTemplates: Record<string, string[]> = {
+  "building-saving-habits": ["t1", "t2"],
+  "emergency-fund": ["t2", "t3"],
+  "getting-out-of-debt": ["t1", "t3"],
+  "future-goals-big-expenses": ["t4", "t2"],
+  "saving-for-retirement": ["t3", "t1"],
+  "financial-independence": ["t3", "t4"],
+};

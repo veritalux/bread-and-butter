@@ -12,6 +12,7 @@ import {
   Settings,
   Send,
   FileText,
+  ArrowRightLeft,
 } from "lucide-react";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -23,6 +24,7 @@ import type { Challenge } from "../types/challenge";
 import type { AppUser, ActivityStatus, CheckInThreshold } from "../types/user";
 import type { OnboardingData } from "../types/onboarding";
 import { GOAL_OPTIONS } from "../types/onboarding";
+import TransferRequestModal from "../components/TransferRequestModal";
 
 const statusConfig: Record<ActivityStatus, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
   active: { label: "Active", color: "#10B981", bg: "rgba(16, 185, 129, 0.1)", icon: CheckCircle },
@@ -108,6 +110,7 @@ function UserRow({ user }: { user: AppUser }) {
   const [showLogs, setShowLogs] = useState(false);
   const [userChallenges, setUserChallenges] = useState<Challenge[]>([]);
   const [userGoals, setUserGoals] = useState<string[]>([]);
+  const [showTransfer, setShowTransfer] = useState(false);
 
   const threshold = getThreshold(user.id);
   const status = getActivityStatus(user.lastActiveDate, threshold);
@@ -308,6 +311,13 @@ function UserRow({ user }: { user: AppUser }) {
               <MessageCircle size={16} />
               Log Check-in
             </button>
+            <button
+              onClick={() => setShowTransfer(true)}
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] text-sm font-medium cursor-pointer bg-transparent hover:bg-[var(--color-surface)] transition-colors"
+              title="Transfer user"
+            >
+              <ArrowRightLeft size={14} />
+            </button>
             {logs.length > 0 && (
               <button
                 onClick={() => { setShowLogs(!showLogs); setShowCheckInForm(false); }}
@@ -318,6 +328,14 @@ function UserRow({ user }: { user: AppUser }) {
               </button>
             )}
           </div>
+
+          {showTransfer && (
+            <TransferRequestModal
+              userId={user.id}
+              userName={user.name.split(" ")[0]}
+              onClose={() => setShowTransfer(false)}
+            />
+          )}
 
           {/* Check-in form */}
           {showCheckInForm && (
