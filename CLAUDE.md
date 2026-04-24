@@ -17,18 +17,43 @@ No test framework is configured.
 
 ## Architecture
 
-**Stack:** React 19 + TypeScript + Vite + Tailwind CSS v4 (via `@tailwindcss/vite` plugin). Icons from `lucide-react`. Routing via `react-router-dom` v7.
+**Stack:** React 19 + TypeScript + Vite + Tailwind CSS v4 (via `@tailwindcss/vite` plugin). Icons from `lucide-react`. Routing via `react-router-dom` v7. Backend via Firebase (`firebase` v12) — Auth + Firestore.
 
-**State management:** Single React Context (`src/context/AppContext.tsx`) provides all app state — auth, challenges, finances, theme, and font preferences. All state is persisted to `localStorage` with `bb-` prefixed keys (e.g., `bb-current-user`, `bb-challenges-{userId}`).
+**Backend:** Firebase project `bread-and-butter-b8b7b` (config in `src/lib/firebase.ts`, exporting `auth` and `db`). All user, challenge, finance, threshold, and check-in data is persisted to Firestore. Only theme (`bb-theme`) and font (`bb-font`) preferences are stored in `localStorage`.
 
-**Auth model:** No backend. Users log in by email against a list of sample users (`src/data/sampleUsers.ts`) plus any locally-registered accounts stored in localStorage. Sign-up creates users in localStorage only.
+**Firestore layout:**
+- `users/{uid}` — `AppUser` profile doc
+- `users/{uid}/challenges/{challengeId}` — per-user challenges
+- `users/{uid}/settings/finances` — `UserFinances`
+- `users/{uid}/checkInLogs/{logId}` — moderator check-in notes on a user
+- `moderatorSettings/{moderatorId}/thresholds/{userId}` — per-user `CheckInThreshold`
 
-**Role-based routing:** Two roles — `user` and `moderator`. The `RequireAuth` wrapper in `App.tsx` gates routes by role. Users see Dashboard (`/`) and Challenges (`/challenges`). Moderators see the Moderator Dashboard (`/moderator`).
+**State management:** Single React Context (`src/context/AppContext.tsx`, type defined in `src/context/appContextDef.ts`, consumer hook in `src/context/useApp.ts`) provides all app state — auth, challenges, finances, theme, font, thresholds, and check-in logs. `onAuthStateChanged` hydrates state on load; `onSnapshot` on the `users` collection keeps `allUsers` live for moderators.
+
+**Auth model:** Firebase email/password auth. Sign-up requires a code:
+- `role: "moderator"` — must provide master code `BREADANDBUTTER2026` (hardcoded in `AppContext.signUp`). On creation, a moderator gets a generated `coachCode` (last-name slice + uid slice).
+- `role: "user"` — must provide a valid `coachCode` matching an existing moderator; the moderator's uid is stored as `moderatorId` on the user doc.
+
+**Role-based routing:** Two roles — `user` and `moderator`. The `RequireAuth` wrapper in `App.tsx` gates routes by role and redirects mismatches. Routes:
+- `/login` — `Login` page (public)
+- `/` — `Dashboard` (user only)
+- `/challenges` — `Challenges` catalog (user only)
+- `/moderator` — `ModeratorDashboard` (moderator only)
+- `*` — redirect to `/`
+
+`BrowserRouter` uses `basename="/bread-and-butter/"`. `Chrome` wraps authed pages with `Navbar` and (for users) `MoneyTallyBar`.
 
 **Key data types** (`src/types/`):
-- `Challenge` — savings challenge with goal, progress, and progress logs
-- `ChallengeTemplate` — predefined challenge blueprints for the challenge catalog
-- `AppUser` — user profile with role, streak data, and optional moderator assignment
-- `UserFinances` — weekly income, tax rate, investment amount
+- `challenge.ts` — `Challenge` (goal, saved, progress logs, computed `daysLeft`), `ProgressLog`, `ChallengeTemplate` (catalog blueprints), `UserFinances` (weekly income, tax rate, weekly investment)
+- `user.ts` — `AppUser` (role, streak, `moderatorId`, `coachCode`), `CheckInThreshold` (`warningDays`/`inactiveDays`, default 2/4), `CheckInLog`, plus `makeInitials`, `getActivityStatus` (`active`/`warning`/`inactive`), `getDaysSinceActive`
+- `fonts.ts` — `FontChoice`
 
-**Deployment:** GitHub Actions workflow builds on push to `main` and deploys `dist/` to the `gh-pages` branch. The Vite `base` is set to `/bread-and-butter/`.
+**Streak logic:** `logProgress` in `AppContext` updates the user's `lastActiveDate`, `streak`, and `longestStreak` based on whether the prior `lastActiveDate` was today, yesterday, or earlier.
+
+**Theming:** Three themes (`dark` | `light` | `sepia`) applied via `data-theme` on `<html>`; font via `data-font`. CSS variables drive colors.
+
+**Components** (`src/components/`): `Navbar`, `MoneyTallyBar`, `HeroSection`, `StatsBar`, `ChallengeCard`, `ChallengeTracker`, `ChallengesSection`, `StartChallengeModal`, `HowItWorks`, `MotivationBanner`, `AccountabilityBanner`.
+
+**Challenge templates:** Predefined catalog entries live in `src/data/sampleData.ts`.
+
+**Deployment:** `.github/workflows/deploy.yml` builds on push to `main` and deploys `dist/` to the `gh-pages` branch via `peaceiris/actions-gh-pages`. The workflow copies `dist/index.html` to `dist/404.html` so GitHub Pages can serve SPA routes. The Vite `base` is set to `/bread-and-butter/`.
