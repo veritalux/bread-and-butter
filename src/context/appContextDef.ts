@@ -33,6 +33,7 @@ export interface AppContextType {
   setThreshold: (userId: string, t: CheckInThreshold) => Promise<void>;
   getCheckInLogs: (userId: string) => CheckInLog[];
   addCheckInLog: (userId: string, note: string) => Promise<void>;
+  acknowledgeDisclaimer: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);

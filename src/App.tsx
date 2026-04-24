@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Challenges from "./pages/Challenges";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import Login from "./pages/Login";
+import DisclaimerModal from "./components/DisclaimerModal";
 
 function LoadingScreen() {
   return (
@@ -35,7 +36,12 @@ function RequireAuth({ children, role }: { children: ReactNode; role?: "user" | 
 }
 
 function Chrome({ children }: { children: ReactNode }) {
-  const { currentUser } = useApp();
+  const { currentUser, acknowledgeDisclaimer } = useApp();
+
+  if (currentUser && !currentUser.disclaimerAcknowledgedAt) {
+    return <DisclaimerModal role={currentUser.role} onAccept={acknowledgeDisclaimer} />;
+  }
+
   return (
     <>
       {currentUser?.role === "user" && <MoneyTallyBar />}

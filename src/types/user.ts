@@ -14,6 +14,7 @@ export interface AppUser {
   longestStreak: number;
   moderatorId?: string;
   coachCode?: string;
+  disclaimerAcknowledgedAt?: string;
 }
 
 export interface CheckInThreshold {

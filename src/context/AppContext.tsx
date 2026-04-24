@@ -131,7 +131,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!currentUser) return;
     const q = currentUser.role === "moderator"
-      ? query(collection(db, "users"), where("role", "==", "user"))
+      ? query(collection(db, "users"), where("role", "==", "user"), where("moderatorId", "==", currentUser.id))
       : collection(db, "users");
 
     const unsub = onSnapshot(q, (snap) => {
@@ -146,7 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!currentUser || currentUser.role !== "moderator") return;
 
     async function loadAllCheckIns() {
-      const usersSnap = await getDocs(query(collection(db, "users"), where("role", "==", "user")));
+      const usersSnap = await getDocs(query(collection(db, "users"), where("role", "==", "user"), where("moderatorId", "==", currentUser!.id)));
       const logs: Record<string, CheckInLog[]> = {};
       for (const userDoc of usersSnap.docs) {
         logs[userDoc.id] = await loadCheckInLogs(userDoc.id);
@@ -348,6 +348,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  // --- Disclaimer ---
+  const acknowledgeDisclaimer = async () => {
+    if (!currentUser) return;
+    const timestamp = new Date().toISOString();
+    await updateDoc(doc(db, "users", currentUser.id), { disclaimerAcknowledgedAt: timestamp });
+    setCurrentUser((prev) => prev ? { ...prev, disclaimerAcknowledgedAt: timestamp } : prev);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -370,6 +378,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setThreshold,
         getCheckInLogs,
         addCheckInLog,
+        acknowledgeDisclaimer,
       }}
     >
       {children}
