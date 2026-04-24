@@ -112,12 +112,13 @@ export default function Navbar() {
           {currentUser ? (
             <>
               {isUser && <NotificationBell />}
-              <div
-                className="ml-2 w-8 h-8 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary-foreground)] text-xs font-bold"
+              <Link
+                to={isUser ? "/profile" : "/moderator"}
+                className="ml-2 w-8 h-8 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary-foreground)] text-xs font-bold no-underline hover:brightness-110 transition-all"
                 title={`${currentUser.name} · ${currentUser.email}`}
               >
                 {currentUser.initials}
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="ml-1 p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)] transition-colors cursor-pointer bg-transparent border-0"
