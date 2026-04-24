@@ -436,6 +436,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const timestamp = new Date().toISOString();
     await setDoc(doc(db, "users", currentUser.id, "settings", "onboarding"), data);
     await updateDoc(doc(db, "users", currentUser.id), { onboardingCompletedAt: timestamp });
+    // Save tax rate and investment to finances settings
+    const updatedFinances: UserFinances = {
+      weeklyIncome: Math.round(data.monthlyIncome / 4),
+      taxRate: data.taxRate,
+      weeklyInvestment: data.weeklyInvestment,
+    };
+    await setDoc(doc(db, "users", currentUser.id, "settings", "finances"), updatedFinances);
+    setFinancesState(updatedFinances);
     setOnboardingData(data);
     setCurrentUser((prev) => prev ? { ...prev, onboardingCompletedAt: timestamp } : prev);
   };

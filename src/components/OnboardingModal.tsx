@@ -13,9 +13,11 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
+  const [taxRate, setTaxRate] = useState("22");
+  const [weeklyInvestment, setWeeklyInvestment] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
 
-  const totalSteps = 5;
+  const totalSteps = 7;
 
   const toggleGoal = (id: string) => {
     setGoals((prev) =>
@@ -29,6 +31,8 @@ export default function OnboardingModal({ onComplete }: Props) {
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: Number(monthlyIncome) || 0,
+      taxRate: Number(taxRate) || 0,
+      weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
     });
   };
@@ -38,7 +42,14 @@ export default function OnboardingModal({ onComplete }: Props) {
     step === 1 ? monthlyFixedPayments !== "" :
     step === 2 ? debtAmount !== "" :
     step === 3 ? monthlyIncome !== "" :
+    step === 4 ? taxRate !== "" :
+    step === 5 ? weeklyInvestment !== "" :
     goals.length > 0;
+
+  const stepTitle =
+    step === 6 ? "Your Goals" :
+    step >= 4 ? "Investing & Taxes" :
+    "Let's get to know you";
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -59,9 +70,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               <Target size={18} className="text-[var(--color-primary)]" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-[var(--color-text-heading)]">
-                {step === 4 ? "Your Goals" : "Let's get to know you"}
-              </h2>
+              <h2 className="text-lg font-bold text-[var(--color-text-heading)]">{stepTitle}</h2>
               <p className="text-xs text-[var(--color-text-muted)]">Step {step + 1} of {totalSteps}</p>
             </div>
           </div>
@@ -161,6 +170,54 @@ export default function OnboardingModal({ onComplete }: Props) {
             )}
 
             {step === 4 && (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
+                  What's your estimated tax rate?
+                </label>
+                <p className="text-xs text-[var(--color-text-muted)] mb-3">
+                  Your approximate total tax rate (federal + state). Most people are between 15-30%.
+                </p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(e.target.value)}
+                    className="w-full pr-8 pl-3 py-3 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                    placeholder="22"
+                    min="0"
+                    max="60"
+                    autoFocus
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">%</span>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
+                  How much do you invest or save each week?
+                </label>
+                <p className="text-xs text-[var(--color-text-muted)] mb-3">
+                  Any amount you regularly set aside — 401k contributions, savings transfers, brokerage deposits. Enter 0 if you don't invest yet.
+                </p>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">$</span>
+                  <input
+                    type="number"
+                    value={weeklyInvestment}
+                    onChange={(e) => setWeeklyInvestment(e.target.value)}
+                    className="w-full pl-7 pr-3 py-3 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                    placeholder="0"
+                    min="0"
+                    autoFocus
+                  />
+                  <span className="text-xs text-[var(--color-text-muted)] mt-2 block">per week</span>
+                </div>
+              </div>
+            )}
+
+            {step === 6 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   What are your primary goals? <span className="text-[var(--color-text-muted)] font-normal">(pick up to 3)</span>

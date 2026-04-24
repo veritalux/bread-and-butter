@@ -3,6 +3,8 @@ export interface OnboardingData {
   monthlyFixedPayments: number;
   debtAmount: number;
   monthlyIncome: number;
+  taxRate: number;
+  weeklyInvestment: number;
   goals: string[];
 }
 
