@@ -15,6 +15,7 @@ export interface AppUser {
   moderatorId?: string;
   coachCode?: string;
   disclaimerAcknowledgedAt?: string;
+  onboardingCompletedAt?: string;
 }
 
 export interface CheckInThreshold {

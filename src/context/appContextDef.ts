@@ -1,6 +1,7 @@
 import { createContext } from "react";
 import type { Challenge, UserFinances } from "../types/challenge";
 import type { AppUser, UserRole, CheckInThreshold, CheckInLog } from "../types/user";
+import type { OnboardingData } from "../types/onboarding";
 import type { FontChoice } from "../types/fonts";
 
 export type Theme = "dark" | "light" | "sepia";
@@ -34,6 +35,8 @@ export interface AppContextType {
   getCheckInLogs: (userId: string) => CheckInLog[];
   addCheckInLog: (userId: string, note: string) => Promise<void>;
   acknowledgeDisclaimer: () => Promise<void>;
+  onboardingData: OnboardingData | null;
+  completeOnboarding: (data: OnboardingData) => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);

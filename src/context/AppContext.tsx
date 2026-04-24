@@ -22,6 +22,7 @@ import type { Challenge, UserFinances } from "../types/challenge";
 import { computeDaysLeft } from "../types/challenge";
 import type { AppUser, CheckInThreshold, CheckInLog } from "../types/user";
 import { makeInitials, DEFAULT_THRESHOLD } from "../types/user";
+import type { OnboardingData } from "../types/onboarding";
 import { AppContext } from "./appContextDef";
 import type { Theme } from "./appContextDef";
 import type { FontChoice } from "../types/fonts";
@@ -73,6 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [finances, setFinancesState] = useState<UserFinances>(DEFAULT_FINANCES);
   const [thresholds, setThresholds] = useState<Record<string, CheckInThreshold>>({});
   const [checkInLogs, setCheckInLogs] = useState<Record<string, CheckInLog[]>>({});
+  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
 
   const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem(THEME_KEY) as Theme) || "dark"
@@ -110,6 +112,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const finSnap = await getDoc(doc(db, "users", firebaseUser.uid, "settings", "finances"));
           if (finSnap.exists()) {
             setFinancesState(finSnap.data() as UserFinances);
+          }
+          // Load onboarding data
+          const onbSnap = await getDoc(doc(db, "users", firebaseUser.uid, "settings", "onboarding"));
+          if (onbSnap.exists()) {
+            setOnboardingData(onbSnap.data() as OnboardingData);
+          } else {
+            setOnboardingData(null);
           }
           // If moderator, load thresholds
           if (userDoc.role === "moderator") {
@@ -348,6 +357,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  // --- Onboarding ---
+  const completeOnboarding = async (data: OnboardingData) => {
+    if (!currentUser) return;
+    const timestamp = new Date().toISOString();
+    await setDoc(doc(db, "users", currentUser.id, "settings", "onboarding"), data);
+    await updateDoc(doc(db, "users", currentUser.id), { onboardingCompletedAt: timestamp });
+    setOnboardingData(data);
+    setCurrentUser((prev) => prev ? { ...prev, onboardingCompletedAt: timestamp } : prev);
+  };
+
   // --- Disclaimer ---
   const acknowledgeDisclaimer = async () => {
     if (!currentUser) return;
@@ -379,6 +398,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         getCheckInLogs,
         addCheckInLog,
         acknowledgeDisclaimer,
+        onboardingData,
+        completeOnboarding,
       }}
     >
       {children}

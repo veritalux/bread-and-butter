@@ -9,6 +9,7 @@ import Challenges from "./pages/Challenges";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import Login from "./pages/Login";
 import DisclaimerModal from "./components/DisclaimerModal";
+import OnboardingModal from "./components/OnboardingModal";
 
 function LoadingScreen() {
   return (
@@ -36,10 +37,14 @@ function RequireAuth({ children, role }: { children: ReactNode; role?: "user" | 
 }
 
 function Chrome({ children }: { children: ReactNode }) {
-  const { currentUser, acknowledgeDisclaimer } = useApp();
+  const { currentUser, acknowledgeDisclaimer, completeOnboarding } = useApp();
 
   if (currentUser && !currentUser.disclaimerAcknowledgedAt) {
     return <DisclaimerModal role={currentUser.role} onAccept={acknowledgeDisclaimer} />;
+  }
+
+  if (currentUser && currentUser.role === "user" && !currentUser.onboardingCompletedAt) {
+    return <OnboardingModal onComplete={completeOnboarding} />;
   }
 
   return (

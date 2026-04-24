@@ -13,7 +13,7 @@ import {
   Send,
   FileText,
 } from "lucide-react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useApp } from "../context/useApp";
 import { ChallengeIcon } from "../data/sampleData";
@@ -21,6 +21,8 @@ import { getActivityStatus, getDaysSinceActive } from "../types/user";
 import { computeDaysLeft } from "../types/challenge";
 import type { Challenge } from "../types/challenge";
 import type { AppUser, ActivityStatus, CheckInThreshold } from "../types/user";
+import type { OnboardingData } from "../types/onboarding";
+import { GOAL_OPTIONS } from "../types/onboarding";
 
 const statusConfig: Record<ActivityStatus, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
   active: { label: "Active", color: "#10B981", bg: "rgba(16, 185, 129, 0.1)", icon: CheckCircle },
@@ -105,6 +107,7 @@ function UserRow({ user }: { user: AppUser }) {
   const [checkInNote, setCheckInNote] = useState("");
   const [showLogs, setShowLogs] = useState(false);
   const [userChallenges, setUserChallenges] = useState<Challenge[]>([]);
+  const [userGoals, setUserGoals] = useState<string[]>([]);
 
   const threshold = getThreshold(user.id);
   const status = getActivityStatus(user.lastActiveDate, threshold);
@@ -115,6 +118,13 @@ function UserRow({ user }: { user: AppUser }) {
 
   useEffect(() => {
     if (!expanded) return;
+    // Load goals
+    getDoc(doc(db, "users", user.id, "settings", "onboarding")).then((snap) => {
+      if (snap.exists()) {
+        setUserGoals((snap.data() as OnboardingData).goals ?? []);
+      }
+    });
+    // Load challenges
     getDocs(collection(db, "users", user.id, "challenges")).then((snap) => {
       setUserChallenges(snap.docs.map((d) => {
         const data = d.data() as Omit<Challenge, "id" | "daysLeft">;
@@ -210,6 +220,20 @@ function UserRow({ user }: { user: AppUser }) {
       {/* Expanded detail */}
       {expanded && (
         <div className="px-4 pb-4 border-t border-[var(--color-border)] animate-fade-in">
+          {/* Goals */}
+          {userGoals.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-4 mb-3">
+              {userGoals.map((gId) => {
+                const goal = GOAL_OPTIONS.find((g) => g.id === gId);
+                return goal ? (
+                  <span key={gId} className="text-xs px-2 py-1 rounded-full bg-[var(--color-glow)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                    {goal.label}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          )}
+
           {/* Quick stats */}
           <div className="grid grid-cols-3 gap-3 mt-4 mb-4">
             <div className="bg-[var(--color-background)] rounded-lg p-3 text-center">
