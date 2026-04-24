@@ -64,6 +64,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-1">
           {isUser && navLink("/", "Dashboard")}
+          {isUser && navLink("/daily-log", "Daily Log")}
           {isUser && navLink("/challenges", "Challenges")}
           {isMod && navLink("/moderator", "Moderator")}
 

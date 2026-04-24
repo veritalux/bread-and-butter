@@ -23,6 +23,7 @@ import { computeDaysLeft } from "../types/challenge";
 import type { AppUser, CheckInThreshold, CheckInLog } from "../types/user";
 import { makeInitials, DEFAULT_THRESHOLD } from "../types/user";
 import type { OnboardingData } from "../types/onboarding";
+import type { DailyLogEntry } from "../types/dailyLog";
 import { AppContext } from "./appContextDef";
 import type { Theme } from "./appContextDef";
 import type { FontChoice } from "../types/fonts";
@@ -367,6 +368,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentUser((prev) => prev ? { ...prev, onboardingCompletedAt: timestamp } : prev);
   };
 
+  // --- Daily Log ---
+  const saveDailyLog = useCallback(async (entry: DailyLogEntry) => {
+    if (!currentUser) return;
+    await setDoc(doc(db, "users", currentUser.id, "dailyLogs", entry.date), entry);
+
+    // Update streak based on daily log
+    const today = toDateStr();
+    const lastActive = currentUser.lastActiveDate;
+    let newStreak = currentUser.streak;
+    if (lastActive === today) {
+      if (newStreak === 0) newStreak = 1;
+    } else if (lastActive === yesterday()) {
+      newStreak = currentUser.streak + 1;
+    } else {
+      newStreak = 1;
+    }
+    const newLongest = Math.max(currentUser.longestStreak, newStreak);
+
+    await updateDoc(doc(db, "users", currentUser.id), {
+      lastActiveDate: today,
+      streak: newStreak,
+      longestStreak: newLongest,
+    });
+
+    setCurrentUser((prev) =>
+      prev ? { ...prev, lastActiveDate: today, streak: newStreak, longestStreak: newLongest } : prev
+    );
+  }, [currentUser]);
+
+  const loadDailyLog = useCallback(async (date: string): Promise<DailyLogEntry | null> => {
+    if (!currentUser) return null;
+    const snap = await getDoc(doc(db, "users", currentUser.id, "dailyLogs", date));
+    if (!snap.exists()) return null;
+    return snap.data() as DailyLogEntry;
+  }, [currentUser]);
+
   // --- Disclaimer ---
   const acknowledgeDisclaimer = async () => {
     if (!currentUser) return;
@@ -400,6 +437,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         acknowledgeDisclaimer,
         onboardingData,
         completeOnboarding,
+        saveDailyLog,
+        loadDailyLog,
       }}
     >
       {children}

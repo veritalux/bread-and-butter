@@ -2,6 +2,7 @@ import { createContext } from "react";
 import type { Challenge, UserFinances } from "../types/challenge";
 import type { AppUser, UserRole, CheckInThreshold, CheckInLog } from "../types/user";
 import type { OnboardingData } from "../types/onboarding";
+import type { DailyLogEntry } from "../types/dailyLog";
 import type { FontChoice } from "../types/fonts";
 
 export type Theme = "dark" | "light" | "sepia";
@@ -37,6 +38,8 @@ export interface AppContextType {
   acknowledgeDisclaimer: () => Promise<void>;
   onboardingData: OnboardingData | null;
   completeOnboarding: (data: OnboardingData) => Promise<void>;
+  saveDailyLog: (entry: DailyLogEntry) => Promise<void>;
+  loadDailyLog: (date: string) => Promise<DailyLogEntry | null>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);

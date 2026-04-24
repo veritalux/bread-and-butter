@@ -7,6 +7,7 @@ import MoneyTallyBar from "./components/MoneyTallyBar";
 import Dashboard from "./pages/Dashboard";
 import Challenges from "./pages/Challenges";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
+import DailyLog from "./pages/DailyLog";
 import Login from "./pages/Login";
 import DisclaimerModal from "./components/DisclaimerModal";
 import OnboardingModal from "./components/OnboardingModal";
@@ -68,6 +69,14 @@ function AppRoutes() {
         element={
           <RequireAuth role="user">
             <Chrome><Dashboard /></Chrome>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/daily-log"
+        element={
+          <RequireAuth role="user">
+            <Chrome><DailyLog /></Chrome>
           </RequireAuth>
         }
       />
