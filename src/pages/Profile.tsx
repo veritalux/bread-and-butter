@@ -12,8 +12,9 @@ export default function Profile() {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState(() => String(onboardingData?.monthlyFixedPayments ?? 0));
   const [debtAmount, setDebtAmount] = useState(() => String(onboardingData?.debtAmount ?? 0));
   const [monthlyIncome, setMonthlyIncome] = useState(() => String(onboardingData?.monthlyIncome ?? finances.weeklyIncome * 4));
+  const [isDependent, setIsDependent] = useState(() => onboardingData?.isDependent ?? false);
   const [weeklyInvestment, setWeeklyInvestment] = useState(() => String(onboardingData?.weeklyInvestment ?? finances.weeklyInvestment));
-  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0);
+  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0, isDependent);
   const [goals, setGoals] = useState<string[]>(() => onboardingData?.goals ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -32,6 +33,7 @@ export default function Profile() {
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: Number(monthlyIncome) || 0,
+      isDependent,
       taxRate: estimatedTax,
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
@@ -109,7 +111,31 @@ export default function Profile() {
             <div className="px-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm">
               {estimatedTax}%
             </div>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">Auto-calculated based on your income</p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">Auto-calculated based on your income (Salem, OR)</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Tax filing status</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Independent", value: false },
+                { label: "Dependent", value: true },
+              ].map(({ label, value }) => (
+                <button
+                  key={String(value)}
+                  type="button"
+                  onClick={() => { setIsDependent(value); setSaved(false); }}
+                  className={`py-2 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                    isDependent === value
+                      ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                      : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">Claimed as dependent on someone else's return</p>
           </div>
 
           <div>
