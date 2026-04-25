@@ -1,6 +1,8 @@
 // Estimates effective tax rate for Salem, Oregon based on annual income.
 // Combines federal income tax + Oregon state income tax.
 // Uses 2024/2025 brackets as approximation. Single filer, standard deduction.
+// Dependents use a limited federal standard deduction: greater of $1,300 or
+// (earned income + $450), capped at the regular $14,600 deduction.
 
 const FEDERAL_STANDARD_DEDUCTION = 14600;
 const FEDERAL_BRACKETS: [number, number][] = [
@@ -33,11 +35,15 @@ function calcProgressiveTax(taxableIncome: number, brackets: [number, number][])
   return tax;
 }
 
-export function estimateTaxRate(monthlyIncome: number): number {
+export function estimateTaxRate(monthlyIncome: number, isDependent = false): number {
   const annualIncome = monthlyIncome * 12;
   if (annualIncome <= 0) return 0;
 
-  const federalTaxable = Math.max(0, annualIncome - FEDERAL_STANDARD_DEDUCTION);
+  const federalDeduction = isDependent
+    ? Math.min(FEDERAL_STANDARD_DEDUCTION, Math.max(1300, annualIncome + 450))
+    : FEDERAL_STANDARD_DEDUCTION;
+
+  const federalTaxable = Math.max(0, annualIncome - federalDeduction);
   const federalTax = calcProgressiveTax(federalTaxable, FEDERAL_BRACKETS);
 
   const oregonTaxable = Math.max(0, annualIncome - OREGON_STANDARD_DEDUCTION);
