@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowRight, ArrowLeft, Check, Target } from "lucide-react";
 import type { OnboardingData } from "../types/onboarding";
 import { GOAL_OPTIONS } from "../types/onboarding";
+import { estimateTaxRate } from "../lib/taxEstimator";
 
 interface Props {
   onComplete: (data: OnboardingData) => void;
@@ -13,11 +14,10 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
-  const [taxRate, setTaxRate] = useState("22");
   const [weeklyInvestment, setWeeklyInvestment] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
 
-  const totalSteps = 7;
+  const totalSteps = 6;
 
   const toggleGoal = (id: string) => {
     setGoals((prev) =>
@@ -26,12 +26,13 @@ export default function OnboardingModal({ onComplete }: Props) {
   };
 
   const handleSubmit = () => {
+    const income = Number(monthlyIncome) || 0;
     onComplete({
       cashOnHand: Number(cashOnHand) || 0,
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
-      monthlyIncome: Number(monthlyIncome) || 0,
-      taxRate: Number(taxRate) || 0,
+      monthlyIncome: income,
+      taxRate: estimateTaxRate(income),
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
     });
@@ -42,13 +43,12 @@ export default function OnboardingModal({ onComplete }: Props) {
     step === 1 ? monthlyFixedPayments !== "" :
     step === 2 ? debtAmount !== "" :
     step === 3 ? monthlyIncome !== "" :
-    step === 4 ? taxRate !== "" :
-    step === 5 ? weeklyInvestment !== "" :
+    step === 4 ? weeklyInvestment !== "" :
     goals.length > 0;
 
   const stepTitle =
-    step === 6 ? "Your Goals" :
-    step >= 4 ? "Investing & Taxes" :
+    step === 5 ? "Your Goals" :
+    step === 4 ? "Investing" :
     "Let's get to know you";
 
   return (
@@ -172,30 +172,6 @@ export default function OnboardingModal({ onComplete }: Props) {
             {step === 4 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
-                  What's your estimated tax rate?
-                </label>
-                <p className="text-xs text-[var(--color-text-muted)] mb-3">
-                  Your approximate total tax rate (federal + state). Most people are between 15-30%.
-                </p>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={taxRate}
-                    onChange={(e) => setTaxRate(e.target.value)}
-                    className="w-full pr-8 pl-3 py-3 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                    placeholder="22"
-                    min="0"
-                    max="60"
-                    autoFocus
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">%</span>
-                </div>
-              </div>
-            )}
-
-            {step === 5 && (
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   How much do you invest or save each week?
                 </label>
                 <p className="text-xs text-[var(--color-text-muted)] mb-3">
@@ -217,7 +193,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               </div>
             )}
 
-            {step === 6 && (
+            {step === 5 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   What are your primary goals? <span className="text-[var(--color-text-muted)] font-normal">(pick up to 3)</span>

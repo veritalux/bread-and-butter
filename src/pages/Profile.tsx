@@ -3,6 +3,7 @@ import { Save, Check, User } from "lucide-react";
 import { useApp } from "../context/useApp";
 import { GOAL_OPTIONS } from "../types/onboarding";
 import type { OnboardingData } from "../types/onboarding";
+import { estimateTaxRate } from "../lib/taxEstimator";
 
 export default function Profile() {
   const { currentUser, onboardingData, completeOnboarding, finances, setFinances } = useApp();
@@ -11,8 +12,8 @@ export default function Profile() {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState(() => String(onboardingData?.monthlyFixedPayments ?? 0));
   const [debtAmount, setDebtAmount] = useState(() => String(onboardingData?.debtAmount ?? 0));
   const [monthlyIncome, setMonthlyIncome] = useState(() => String(onboardingData?.monthlyIncome ?? finances.weeklyIncome * 4));
-  const [taxRate, setTaxRate] = useState(() => String(onboardingData?.taxRate ?? finances.taxRate));
   const [weeklyInvestment, setWeeklyInvestment] = useState(() => String(onboardingData?.weeklyInvestment ?? finances.weeklyInvestment));
+  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0);
   const [goals, setGoals] = useState<string[]>(() => onboardingData?.goals ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -31,7 +32,7 @@ export default function Profile() {
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: Number(monthlyIncome) || 0,
-      taxRate: Number(taxRate) || 0,
+      taxRate: estimatedTax,
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
     };
@@ -47,7 +48,7 @@ export default function Profile() {
   };
 
   const inputClass = "w-full pl-7 pr-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors";
-  const pctInputClass = "w-full pr-8 pl-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors";
+
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-10">
@@ -104,11 +105,11 @@ export default function Profile() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Tax rate</label>
-            <div className="relative">
-              <input type="number" value={taxRate} onChange={(e) => { setTaxRate(e.target.value); setSaved(false); }} className={pctInputClass} min="0" max="60" />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] text-sm">%</span>
+            <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Estimated tax rate</label>
+            <div className="px-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm">
+              {estimatedTax}%
             </div>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">Auto-calculated based on your income</p>
           </div>
 
           <div>
