@@ -6,6 +6,7 @@ export interface OnboardingData {
   taxRate: number;
   weeklyInvestment: number;
   goals: string[];
+  isDependent?: boolean;
 }
 
 export const GOAL_OPTIONS = [
