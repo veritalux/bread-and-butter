@@ -14,6 +14,7 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
+  const [isDependent, setIsDependent] = useState(false);
   const [weeklyInvestment, setWeeklyInvestment] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
 
@@ -32,7 +33,8 @@ export default function OnboardingModal({ onComplete }: Props) {
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: income,
-      taxRate: estimateTaxRate(income),
+      isDependent,
+      taxRate: estimateTaxRate(income, isDependent),
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
     });
@@ -165,6 +167,38 @@ export default function OnboardingModal({ onComplete }: Props) {
                     min="0"
                     autoFocus
                   />
+                </div>
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-[var(--color-text-heading)] mb-2">
+                    Can someone else claim you as a dependent on their taxes?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDependent(false)}
+                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+                        !isDependent
+                          ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                          : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
+                      }`}
+                    >
+                      No
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsDependent(true)}
+                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+                        isDependent
+                          ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                          : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
+                      }`}
+                    >
+                      Yes
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1.5">
+                    This helps estimate your tax rate more accurately.
+                  </p>
                 </div>
               </div>
             )}
