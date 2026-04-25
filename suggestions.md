@@ -1,1 +1,1 @@
-When onboarding, the app should not ask the user for their estimated tax amount, instead it should estimate tax based on their income, and calculate tax % based on what the tax would be for that income level in Salem, Oregon. 
+When onboarding, the app should not ask the user for their estimated tax amount, instead it should estimate tax based on their income, and calculate tax % based on what the tax would be for that income level in Salem, Oregon. It can ask whether the user is a dependent or not to help calculate this.
