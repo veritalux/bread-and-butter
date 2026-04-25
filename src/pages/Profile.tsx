@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Save, Check, User } from "lucide-react";
+import { Save, Check, User, Info } from "lucide-react";
 import { useApp } from "../context/useApp";
 import { GOAL_OPTIONS } from "../types/onboarding";
 import type { OnboardingData } from "../types/onboarding";
@@ -12,8 +12,9 @@ export default function Profile() {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState(() => String(onboardingData?.monthlyFixedPayments ?? 0));
   const [debtAmount, setDebtAmount] = useState(() => String(onboardingData?.debtAmount ?? 0));
   const [monthlyIncome, setMonthlyIncome] = useState(() => String(onboardingData?.monthlyIncome ?? finances.weeklyIncome * 4));
+  const [isDependent, setIsDependent] = useState(() => onboardingData?.isDependent ?? false);
   const [weeklyInvestment, setWeeklyInvestment] = useState(() => String(onboardingData?.weeklyInvestment ?? finances.weeklyInvestment));
-  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0);
+  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0, isDependent);
   const [goals, setGoals] = useState<string[]>(() => onboardingData?.goals ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -32,6 +33,7 @@ export default function Profile() {
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: Number(monthlyIncome) || 0,
+      isDependent,
       taxRate: estimatedTax,
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
@@ -104,12 +106,30 @@ export default function Profile() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Estimated tax rate</label>
-            <div className="px-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm">
-              {estimatedTax}%
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Tax situation</label>
+            <button
+              type="button"
+              onClick={() => { setIsDependent((prev) => !prev); setSaved(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border text-sm font-medium text-left transition-all cursor-pointer ${
+                isDependent
+                  ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                  : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
+              }`}
+            >
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                isDependent ? "border-[var(--color-primary)] bg-[var(--color-primary)]" : "border-[var(--color-border)]"
+              }`}>
+                {isDependent && <Check size={10} className="text-[var(--color-primary-foreground)]" />}
+              </div>
+              I am claimed as a dependent on someone else's tax return
+            </button>
+            <div className="flex items-center gap-1.5 mt-2">
+              <Info size={12} className="text-[var(--color-text-muted)] shrink-0" />
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Estimated tax rate: <span className="font-semibold text-[var(--color-text)]">{estimatedTax}%</span> — auto-calculated for Salem, OR based on your income{isDependent ? " as a dependent" : ""}
+              </p>
             </div>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">Auto-calculated based on your income</p>
           </div>
 
           <div>
