@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Target, Trophy, TrendingUp, Sparkles, Rocket } from "lucide-react";
 import { useApp } from "../context/useApp";
 import { challengeTemplates, goalToTemplates, ChallengeIcon } from "../data/sampleData";
+import type { ChallengeTemplate } from "../types/challenge";
 import ChallengeCard from "../components/ChallengeCard";
 import ChallengeTracker from "../components/ChallengeTracker";
 import StartChallengeModal from "../components/StartChallengeModal";
@@ -10,6 +11,16 @@ export default function Challenges() {
   const { challenges, onboardingData } = useApp();
   const [trackingId, setTrackingId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ChallengeTemplate | undefined>();
+
+  const openTemplate = (t: ChallengeTemplate) => {
+    setSelectedTemplate(t);
+    setShowModal(true);
+  };
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedTemplate(undefined);
+  };
 
   const active = challenges.filter((c) => c.saved < c.goal);
   const completed = challenges.filter((c) => c.saved >= c.goal);
@@ -76,7 +87,7 @@ export default function Challenges() {
             {recommended.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setShowModal(true)}
+                onClick={() => openTemplate(t)}
                 className="flex items-center gap-3 p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-primary)]/30 transition-all text-left cursor-pointer w-full"
               >
                 <div className="w-10 h-10 rounded-lg bg-[var(--color-glow)] flex items-center justify-center shrink-0">
@@ -132,7 +143,7 @@ export default function Challenges() {
           {(recommended.length > 0 ? allTemplates : challengeTemplates).map((t) => (
             <button
               key={t.id}
-              onClick={() => setShowModal(true)}
+              onClick={() => openTemplate(t)}
               className="flex items-center gap-3 p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:border-[var(--color-primary)]/30 transition-all text-left cursor-pointer w-full"
             >
               <div className="w-10 h-10 rounded-lg bg-[var(--color-glow)] flex items-center justify-center shrink-0">
@@ -156,7 +167,7 @@ export default function Challenges() {
         <ChallengeTracker challenge={trackedChallenge} onClose={() => setTrackingId(null)} />
       )}
 
-      <StartChallengeModal isOpen={showModal} onClose={() => setShowModal(false)} />
+      <StartChallengeModal isOpen={showModal} onClose={closeModal} initialTemplate={selectedTemplate} />
     </main>
   );
 }

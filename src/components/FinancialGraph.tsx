@@ -16,17 +16,23 @@ import type { DailyLogEntry } from "../types/dailyLog";
 
 type Range = "7d" | "30d" | "90d" | "all";
 
+function localDateStr(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 interface DataPoint {
   date: string;
   label: string;
   income: number;
   spending: number;
   savings: number;
-  projected?: boolean;
+  debt: number | null;
+  invested: number;
+  projected: boolean;
 }
 
 export default function FinancialGraph() {
-  const { currentUser } = useApp();
+  const { currentUser, onboardingData } = useApp();
   const [range, setRange] = useState<Range>("30d");
   const [data, setData] = useState<DataPoint[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -42,70 +48,91 @@ export default function FinancialGraph() {
       return;
     }
 
-    // Determine date range
     const now = new Date();
-    const today = now.toISOString().slice(0, 10);
+    const today = localDateStr(now);
     let startDate: string;
     if (range === "7d") {
       const d = new Date(now);
       d.setDate(d.getDate() - 7);
-      startDate = d.toISOString().slice(0, 10);
+      startDate = localDateStr(d);
     } else if (range === "30d") {
       const d = new Date(now);
       d.setDate(d.getDate() - 30);
-      startDate = d.toISOString().slice(0, 10);
+      startDate = localDateStr(d);
     } else if (range === "90d") {
       const d = new Date(now);
       d.setDate(d.getDate() - 90);
-      startDate = d.toISOString().slice(0, 10);
+      startDate = localDateStr(d);
     } else {
       startDate = logs[0].date;
     }
 
     const filtered = logs.filter((l) => l.date >= startDate && l.date <= today);
 
+    // Starting values from onboarding
+    const startingSavings = onboardingData?.cashOnHand ?? 0;
+    const startingDebt = onboardingData?.debtAmount ?? 0;
+    const hasDebt = startingDebt > 0;
+
     // Build cumulative data
     let cumIncome = 0;
     let cumSpending = 0;
-    const points: DataPoint[] = filtered.map((log) => {
+    let cumInvested = 0;
+    const seen = new Set<string>();
+    const points: DataPoint[] = [];
+
+    for (const log of filtered) {
+      // Skip duplicate dates
+      if (seen.has(log.date)) continue;
+      seen.add(log.date);
+
       const dayIncome = log.income.reduce((s, e) => s + e.amount, 0);
       const daySpending = log.spending.reduce((s, e) => s + e.amount, 0);
+      const dayInvested = (log as unknown as { invested?: number }).invested ?? 0;
       cumIncome += dayIncome;
       cumSpending += daySpending;
+      cumInvested += dayInvested;
       const d = new Date(log.date + "T12:00:00");
-      return {
+      points.push({
         date: log.date,
         label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         income: cumIncome,
         spending: cumSpending,
-        savings: cumIncome - cumSpending,
-      };
-    });
+        savings: startingSavings + cumIncome - cumSpending,
+        debt: hasDebt ? Math.max(0, startingDebt) : null,
+        invested: cumInvested,
+        projected: false,
+      });
+    }
 
     // Add projection (7 days out based on daily averages)
     if (filtered.length >= 2) {
-      const dayCount = Math.max(1, filtered.length);
+      const dayCount = Math.max(1, points.length);
       const avgDailyIncome = cumIncome / dayCount;
       const avgDailySpending = cumSpending / dayCount;
+      const avgDailyInvested = cumInvested / dayCount;
 
       for (let i = 1; i <= 7; i++) {
         const d = new Date(now);
         d.setDate(d.getDate() + i);
         cumIncome += avgDailyIncome;
         cumSpending += avgDailySpending;
+        cumInvested += avgDailyInvested;
         points.push({
-          date: d.toISOString().slice(0, 10),
+          date: localDateStr(d),
           label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
           income: Math.round(cumIncome),
           spending: Math.round(cumSpending),
-          savings: Math.round(cumIncome - cumSpending),
+          savings: Math.round(startingSavings + cumIncome - cumSpending),
+          debt: hasDebt ? Math.max(0, startingDebt) : null,
+          invested: Math.round(cumInvested),
           projected: true,
         });
       }
     }
 
     setData(points);
-  }, [currentUser, range]);
+  }, [currentUser, range, onboardingData]);
 
   useEffect(() => {
     startTransition(() => { loadLogs(); });
@@ -117,6 +144,12 @@ export default function FinancialGraph() {
     { key: "90d", label: "90D" },
     { key: "all", label: "All" },
   ];
+
+  // Find where projections start for split rendering
+  const projectionStartIndex = data.findIndex((d) => d.projected);
+  const hasProjections = projectionStartIndex >= 0;
+  const hasDebtData = data.some((d) => d.debt !== null && d.debt > 0);
+  const hasInvestmentData = data.some((d) => d.invested > 0);
 
   if (isPending) {
     return (
@@ -158,19 +191,11 @@ export default function FinancialGraph() {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={240}>
+      <ResponsiveContainer width="100%" height={260}>
         <AreaChart data={data} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
           <defs>
-            <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="spendingGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-            </linearGradient>
             <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+              <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
               <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
             </linearGradient>
           </defs>
@@ -184,17 +209,65 @@ export default function FinancialGraph() {
               borderRadius: "8px",
               fontSize: "12px",
             }}
-            formatter={(value: unknown) => [`$${Number(value).toLocaleString()}`]}
+            formatter={(value: unknown, name: unknown) => {
+              const v = Number(value);
+              if (v === 0 && name === "Debt") return [null, null];
+              return [`$${v.toLocaleString()}`];
+            }}
           />
           <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
-          <Area type="monotone" dataKey="income" name="Income" stroke="#10B981" fill="url(#incomeGrad)" strokeWidth={2} />
-          <Area type="monotone" dataKey="spending" name="Spending" stroke="#ef4444" fill="url(#spendingGrad)" strokeWidth={2} />
-          <Area type="monotone" dataKey="savings" name="Savings" stroke="var(--color-primary)" fill="url(#savingsGrad)" strokeWidth={2} />
+          <Area
+            type="monotone"
+            dataKey="income"
+            name="Income"
+            stroke="#10B981"
+            fill="none"
+            strokeWidth={2}
+            strokeDasharray={hasProjections ? undefined : undefined}
+          />
+          <Area
+            type="monotone"
+            dataKey="spending"
+            name="Spending"
+            stroke="#ef4444"
+            fill="none"
+            strokeWidth={2}
+          />
+          <Area
+            type="monotone"
+            dataKey="savings"
+            name="Savings"
+            stroke="var(--color-primary)"
+            fill="url(#savingsGrad)"
+            strokeWidth={2}
+          />
+          {hasDebtData && (
+            <Area
+              type="monotone"
+              dataKey="debt"
+              name="Debt"
+              stroke="#f97316"
+              fill="none"
+              strokeWidth={2}
+              strokeDasharray="6 3"
+              connectNulls={false}
+            />
+          )}
+          {hasInvestmentData && (
+            <Area
+              type="monotone"
+              dataKey="invested"
+              name="Invested"
+              stroke="#8b5cf6"
+              fill="none"
+              strokeWidth={2}
+            />
+          )}
         </AreaChart>
       </ResponsiveContainer>
 
       <p className="text-xs text-[var(--color-text-muted)] text-center mt-3">
-        {data.some((d) => d.projected) && "Dotted lines are projections. "}
+        {hasProjections && "Projected data shown after current date. "}
         Projections are estimates based on your recent activity and are not financial advice.
       </p>
     </div>

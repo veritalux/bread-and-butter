@@ -70,7 +70,7 @@ export const challengeTemplates: ChallengeTemplate[] = [
   },
   {
     id: "t4",
-    title: "Purchase Fund",
+    title: "Bonus Item Fund",
     description: "Save up for a specific item by cutting daily spending.",
     icon: "ShoppingCart",
     category: "purchase",
@@ -85,12 +85,29 @@ export const challengeTemplates: ChallengeTemplate[] = [
       "What spending will you cut to fund it?",
     ],
   },
+  {
+    id: "t5",
+    title: "Emergency Fund",
+    description: "Build your safety net by redirecting money into an emergency fund on a regular schedule.",
+    icon: "Zap",
+    category: "recommended",
+    tag: "Essential",
+    savingsEstimate: "$50-500/mo",
+    duration: "90 days",
+    defaultGoal: 500,
+    defaultDays: 90,
+    guidelines: [
+      "Have you started an emergency fund yet?",
+      "How often do you want to contribute? (daily, weekly, biweekly, monthly)",
+      "How much per contribution?",
+    ],
+  },
 ];
 
 // Map onboarding goals to recommended challenge template IDs
 export const goalToTemplates: Record<string, string[]> = {
   "building-saving-habits": ["t1", "t2"],
-  "emergency-fund": ["t2", "t3"],
+  "emergency-fund": ["t5", "t2"],
   "getting-out-of-debt": ["t1", "t3"],
   "future-goals-big-expenses": ["t4", "t2"],
   "saving-for-retirement": ["t3", "t1"],

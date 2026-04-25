@@ -34,7 +34,7 @@ const THEME_KEY = "bb-theme";
 const FONT_KEY = "bb-font";
 
 function toDateStr(d: Date = new Date()): string {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function yesterday(): string {

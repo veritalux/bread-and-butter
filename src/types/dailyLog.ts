@@ -12,6 +12,7 @@ export interface DailyLogEntry {
   date: string;
   income: IncomeEntry[];
   spending: SpendingEntry[];
+  invested: number;
   createdAt: string;
   updatedAt: string;
 }

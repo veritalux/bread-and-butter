@@ -7,6 +7,7 @@ import type { ChallengeTemplate } from "../types/challenge";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  initialTemplate?: ChallengeTemplate;
 }
 
 const categoryLabels: Record<string, { label: string; color: string }> = {
@@ -15,12 +16,12 @@ const categoryLabels: Record<string, { label: string; color: string }> = {
   purchase: { label: "Save for a Purchase", color: "#3b82f6" },
 };
 
-export default function StartChallengeModal({ isOpen, onClose }: Props) {
+export default function StartChallengeModal({ isOpen, onClose, initialTemplate }: Props) {
   const { addChallenge } = useApp();
-  const [selected, setSelected] = useState<ChallengeTemplate | null>(null);
+  const [selected, setSelected] = useState<ChallengeTemplate | null>(initialTemplate ?? null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [goal, setGoal] = useState("");
-  const [days, setDays] = useState("");
+  const [goal, setGoal] = useState(initialTemplate?.defaultGoal.toString() ?? "");
+  const [days, setDays] = useState(initialTemplate?.defaultDays.toString() ?? "");
   const [investTo, setInvestTo] = useState("Index Fund");
 
   const handleClose = () => {
@@ -48,7 +49,7 @@ export default function StartChallengeModal({ isOpen, onClose }: Props) {
       icon: selected.icon,
       saved: 0,
       goal: numGoal,
-      startDate: new Date().toISOString().slice(0, 10),
+      startDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })(),
       totalDays: numDays,
       investTo,
       category: selected.category,

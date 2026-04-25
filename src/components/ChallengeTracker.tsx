@@ -15,9 +15,9 @@ export default function ChallengeTracker({ challenge, onClose }: Props) {
   const [note, setNote] = useState("");
   const progress = Math.min((challenge.saved / challenge.goal) * 100, 100);
 
-  const handleLog = () => {
-    const numAmount = Number(amount) || 5;
-    logProgress(challenge.id, numAmount, note || undefined);
+  const handleLog = (onTrack: boolean) => {
+    const numAmount = onTrack ? (Number(amount) || 5) : 0;
+    logProgress(challenge.id, numAmount, note || (onTrack ? undefined : "Did not stay on track"));
     setNote("");
   };
 
@@ -99,13 +99,21 @@ export default function ChallengeTracker({ challenge, onClose }: Props) {
               className="flex-[2] px-3 py-2 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-primary)]/50 transition-colors"
             />
           </div>
-          <button
-            onClick={handleLog}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold hover:brightness-110 transition-all cursor-pointer border-0"
-          >
-            <CheckCircle size={16} />
-            I Stayed on Track Today
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleLog(true)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold hover:brightness-110 transition-all cursor-pointer border-0"
+            >
+              <CheckCircle size={16} />
+              Stayed on Track
+            </button>
+            <button
+              onClick={() => handleLog(false)}
+              className="px-4 py-2.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] text-sm font-medium cursor-pointer bg-transparent hover:bg-[var(--color-surface)] transition-colors"
+            >
+              Didn't Today
+            </button>
+          </div>
         </div>
 
         {/* Log history */}

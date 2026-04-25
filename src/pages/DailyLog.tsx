@@ -6,6 +6,7 @@ import {
   Trash2,
   DollarSign,
   ShoppingCart,
+  TrendingUp,
   Save,
   Flame,
 } from "lucide-react";
@@ -14,7 +15,7 @@ import { SPENDING_CATEGORIES } from "../types/dailyLog";
 import type { IncomeEntry, SpendingEntry } from "../types/dailyLog";
 
 function toDateStr(d: Date = new Date()): string {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function formatDate(dateStr: string): string {
@@ -27,6 +28,7 @@ export default function DailyLog() {
   const [date, setDate] = useState(toDateStr());
   const [income, setIncome] = useState<IncomeEntry[]>([]);
   const [spending, setSpending] = useState<SpendingEntry[]>([]);
+  const [invested, setInvested] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -41,9 +43,11 @@ export default function DailyLog() {
         if (entry) {
           setIncome(entry.income);
           setSpending(entry.spending);
+          setInvested(String(entry.invested ?? 0));
         } else {
           setIncome([]);
           setSpending([]);
+          setInvested("");
         }
         setSaved(false);
       });
@@ -83,6 +87,7 @@ export default function DailyLog() {
       date,
       income: income.filter((e) => e.amount > 0),
       spending: spending.filter((e) => e.amount > 0),
+      invested: Number(invested) || 0,
       createdAt: now,
       updatedAt: now,
     });
@@ -238,9 +243,30 @@ export default function DailyLog() {
             )}
           </section>
 
+          {/* Invested */}
+          <section className="mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp size={16} className="text-purple-500" />
+              <h2 className="text-base font-semibold text-[var(--color-text-heading)]">Invested Today</h2>
+            </div>
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-3">
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[var(--color-text-muted)]">$</span>
+                <input
+                  type="number"
+                  value={invested}
+                  onChange={(e) => { setInvested(e.target.value); setSaved(false); }}
+                  placeholder="0"
+                  className="w-full pl-6 pr-2 py-1.5 rounded-md bg-[var(--color-background)] border border-[var(--color-border)] text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                />
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)] mt-1.5">401k, savings transfers, brokerage deposits — any amount moved to investments today.</p>
+            </div>
+          </section>
+
           {/* Summary */}
           <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 mb-6">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-4 gap-3 text-center">
               <div>
                 <p className="text-xs text-[var(--color-text-muted)] mb-1">Income</p>
                 <p className="text-lg font-bold text-green-500">${totalIncome.toLocaleString()}</p>
@@ -248,6 +274,10 @@ export default function DailyLog() {
               <div>
                 <p className="text-xs text-[var(--color-text-muted)] mb-1">Spent</p>
                 <p className="text-lg font-bold text-red-400">${totalSpending.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-muted)] mb-1">Invested</p>
+                <p className="text-lg font-bold text-purple-500">${(Number(invested) || 0).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-xs text-[var(--color-text-muted)] mb-1">Net</p>
