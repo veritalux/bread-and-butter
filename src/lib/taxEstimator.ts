@@ -1,6 +1,11 @@
 // Estimates effective tax rate for Salem, Oregon based on annual income.
-// Combines federal income tax + Oregon state income tax.
-// Uses 2024/2025 brackets as approximation. Single filer, standard deduction.
+// Combines federal income tax + Oregon state income tax + FICA.
+// Uses 2024/2025 brackets. Single filer unless claimed as a dependent.
+//
+// Dependents: standard deduction is limited to the greater of a base amount
+// or earned income + an adder, capped at the normal single-filer deduction.
+// This reflects IRS Publication 501 and Oregon rules for dependents filing
+// their own return, and meaningfully raises the effective rate for low earners.
 
 const FEDERAL_STANDARD_DEDUCTION = 14600;
 const FEDERAL_BRACKETS: [number, number][] = [
@@ -33,14 +38,26 @@ function calcProgressiveTax(taxableIncome: number, brackets: [number, number][])
   return tax;
 }
 
-export function estimateTaxRate(monthlyIncome: number): number {
+function dependentDeduction(annualIncome: number, base: number, adder: number, cap: number): number {
+  return Math.min(Math.max(base, annualIncome + adder), cap);
+}
+
+export function estimateTaxRate(monthlyIncome: number, isDependent = false): number {
   const annualIncome = monthlyIncome * 12;
   if (annualIncome <= 0) return 0;
 
-  const federalTaxable = Math.max(0, annualIncome - FEDERAL_STANDARD_DEDUCTION);
+  const federalDeduction = isDependent
+    ? dependentDeduction(annualIncome, 1300, 450, FEDERAL_STANDARD_DEDUCTION)
+    : FEDERAL_STANDARD_DEDUCTION;
+
+  const oregonDeduction = isDependent
+    ? dependentDeduction(annualIncome, 1100, 350, OREGON_STANDARD_DEDUCTION)
+    : OREGON_STANDARD_DEDUCTION;
+
+  const federalTaxable = Math.max(0, annualIncome - federalDeduction);
   const federalTax = calcProgressiveTax(federalTaxable, FEDERAL_BRACKETS);
 
-  const oregonTaxable = Math.max(0, annualIncome - OREGON_STANDARD_DEDUCTION);
+  const oregonTaxable = Math.max(0, annualIncome - oregonDeduction);
   const oregonTax = calcProgressiveTax(oregonTaxable, OREGON_BRACKETS);
 
   // FICA (Social Security 6.2% up to $168,600 + Medicare 1.45%)
