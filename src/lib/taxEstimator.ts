@@ -1,6 +1,6 @@
 // Estimates effective tax rate for Salem, Oregon based on annual income.
-// Combines federal income tax + Oregon state income tax.
-// Uses 2024/2025 brackets as approximation. Single filer, standard deduction.
+// Combines federal income tax + Oregon state income tax + FICA.
+// Uses 2024/2025 brackets. Single filer filing independently or as a dependent.
 
 const FEDERAL_STANDARD_DEDUCTION = 14600;
 const FEDERAL_BRACKETS: [number, number][] = [
@@ -33,22 +33,33 @@ function calcProgressiveTax(taxableIncome: number, brackets: [number, number][])
   return tax;
 }
 
-export function estimateTaxRate(monthlyIncome: number): number {
+// Dependents have a reduced standard deduction:
+// federal: max($1,300, min(earned_income + $450, $14,600))
+// Oregon: max($0, min(earned_income + $450, $2,745))
+export function estimateTaxRate(monthlyIncome: number, isDependent = false): number {
   const annualIncome = monthlyIncome * 12;
   if (annualIncome <= 0) return 0;
 
-  const federalTaxable = Math.max(0, annualIncome - FEDERAL_STANDARD_DEDUCTION);
+  let federalSD = FEDERAL_STANDARD_DEDUCTION;
+  let oregonSD = OREGON_STANDARD_DEDUCTION;
+
+  if (isDependent) {
+    federalSD = Math.max(1300, Math.min(annualIncome + 450, FEDERAL_STANDARD_DEDUCTION));
+    oregonSD = Math.max(0, Math.min(annualIncome + 450, OREGON_STANDARD_DEDUCTION));
+  }
+
+  const federalTaxable = Math.max(0, annualIncome - federalSD);
   const federalTax = calcProgressiveTax(federalTaxable, FEDERAL_BRACKETS);
 
-  const oregonTaxable = Math.max(0, annualIncome - OREGON_STANDARD_DEDUCTION);
+  const oregonTaxable = Math.max(0, annualIncome - oregonSD);
   const oregonTax = calcProgressiveTax(oregonTaxable, OREGON_BRACKETS);
 
-  // FICA (Social Security 6.2% up to $168,600 + Medicare 1.45%)
+  // FICA: Social Security 6.2% up to $168,600 + Medicare 1.45%
   const socialSecurity = Math.min(annualIncome, 168600) * 0.062;
   const medicare = annualIncome * 0.0145;
 
   const totalTax = federalTax + oregonTax + socialSecurity + medicare;
   const effectiveRate = Math.round((totalTax / annualIncome) * 100);
 
-  return Math.min(effectiveRate, 50); // cap at 50%
+  return Math.min(effectiveRate, 50);
 }

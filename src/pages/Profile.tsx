@@ -12,8 +12,9 @@ export default function Profile() {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState(() => String(onboardingData?.monthlyFixedPayments ?? 0));
   const [debtAmount, setDebtAmount] = useState(() => String(onboardingData?.debtAmount ?? 0));
   const [monthlyIncome, setMonthlyIncome] = useState(() => String(onboardingData?.monthlyIncome ?? finances.weeklyIncome * 4));
+  const [isDependent, setIsDependent] = useState<boolean>(() => onboardingData?.isDependent ?? false);
   const [weeklyInvestment, setWeeklyInvestment] = useState(() => String(onboardingData?.weeklyInvestment ?? finances.weeklyInvestment));
-  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0);
+  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0, isDependent);
   const [goals, setGoals] = useState<string[]>(() => onboardingData?.goals ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -32,12 +33,12 @@ export default function Profile() {
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: Number(monthlyIncome) || 0,
+      isDependent,
       taxRate: estimatedTax,
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
     };
     await completeOnboarding(data);
-    // Also update finances directly
     setFinances({
       weeklyIncome: Math.round(data.monthlyIncome / 4),
       taxRate: data.taxRate,
@@ -104,12 +105,41 @@ export default function Profile() {
             </div>
           </div>
 
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Tax filing status</label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setIsDependent(false); setSaved(false); }}
+                className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+                  !isDependent
+                    ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                    : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
+                }`}
+              >
+                Independent filer
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsDependent(true); setSaved(false); }}
+                className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+                  isDependent
+                    ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                    : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
+                }`}
+              >
+                Claimed as dependent
+              </button>
+            </div>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">Can someone else (e.g. a parent) claim you on their tax return?</p>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Estimated tax rate</label>
             <div className="px-3 py-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm">
               {estimatedTax}%
             </div>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">Auto-calculated based on your income</p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">Auto-calculated for Salem, OR based on income and filing status</p>
           </div>
 
           <div>
