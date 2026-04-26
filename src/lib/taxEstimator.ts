@@ -1,6 +1,9 @@
 // Estimates effective tax rate for Salem, Oregon based on annual income.
 // Combines federal income tax + Oregon state income tax.
 // Uses 2024/2025 brackets as approximation. Single filer, standard deduction.
+// Dependents use a reduced standard deduction per IRS rules:
+//   Federal: max($1,300, min(earned income + $450, $14,600))
+//   Oregon:  min($2,745, earned income + $450), minimum $0
 
 const FEDERAL_STANDARD_DEDUCTION = 14600;
 const FEDERAL_BRACKETS: [number, number][] = [
@@ -33,14 +36,24 @@ function calcProgressiveTax(taxableIncome: number, brackets: [number, number][])
   return tax;
 }
 
-export function estimateTaxRate(monthlyIncome: number): number {
+export function estimateTaxRate(monthlyIncome: number, isDependent = false): number {
   const annualIncome = monthlyIncome * 12;
   if (annualIncome <= 0) return 0;
 
-  const federalTaxable = Math.max(0, annualIncome - FEDERAL_STANDARD_DEDUCTION);
+  let federalDeduction: number;
+  let oregonDeduction: number;
+  if (isDependent) {
+    federalDeduction = Math.min(Math.max(1300, annualIncome + 450), FEDERAL_STANDARD_DEDUCTION);
+    oregonDeduction = Math.max(0, Math.min(annualIncome + 450, OREGON_STANDARD_DEDUCTION));
+  } else {
+    federalDeduction = FEDERAL_STANDARD_DEDUCTION;
+    oregonDeduction = OREGON_STANDARD_DEDUCTION;
+  }
+
+  const federalTaxable = Math.max(0, annualIncome - federalDeduction);
   const federalTax = calcProgressiveTax(federalTaxable, FEDERAL_BRACKETS);
 
-  const oregonTaxable = Math.max(0, annualIncome - OREGON_STANDARD_DEDUCTION);
+  const oregonTaxable = Math.max(0, annualIncome - oregonDeduction);
   const oregonTax = calcProgressiveTax(oregonTaxable, OREGON_BRACKETS);
 
   // FICA (Social Security 6.2% up to $168,600 + Medicare 1.45%)
