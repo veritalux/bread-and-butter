@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, ArrowLeft, Check, Target } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Target, Users, User } from "lucide-react";
 import type { OnboardingData } from "../types/onboarding";
 import { GOAL_OPTIONS } from "../types/onboarding";
 import { estimateTaxRate } from "../lib/taxEstimator";
@@ -14,10 +14,11 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
+  const [isDependent, setIsDependent] = useState<boolean | null>(null);
   const [weeklyInvestment, setWeeklyInvestment] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
 
-  const totalSteps = 6;
+  const totalSteps = 7;
 
   const toggleGoal = (id: string) => {
     setGoals((prev) =>
@@ -27,12 +28,14 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   const handleSubmit = () => {
     const income = Number(monthlyIncome) || 0;
+    const dependent = isDependent ?? false;
     onComplete({
       cashOnHand: Number(cashOnHand) || 0,
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: income,
-      taxRate: estimateTaxRate(income),
+      isDependent: dependent,
+      taxRate: estimateTaxRate(income, dependent),
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
     });
@@ -43,12 +46,14 @@ export default function OnboardingModal({ onComplete }: Props) {
     step === 1 ? monthlyFixedPayments !== "" :
     step === 2 ? debtAmount !== "" :
     step === 3 ? monthlyIncome !== "" :
-    step === 4 ? weeklyInvestment !== "" :
+    step === 4 ? isDependent !== null :
+    step === 5 ? weeklyInvestment !== "" :
     goals.length > 0;
 
   const stepTitle =
-    step === 5 ? "Your Goals" :
-    step === 4 ? "Investing" :
+    step === 6 ? "Your Goals" :
+    step === 5 ? "Investing" :
+    step === 4 ? "Tax Status" :
     "Let's get to know you";
 
   return (
@@ -172,6 +177,43 @@ export default function OnboardingModal({ onComplete }: Props) {
             {step === 4 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
+                  Can someone else claim you as a dependent on their taxes?
+                </label>
+                <p className="text-xs text-[var(--color-text-muted)] mb-4">
+                  This affects your standard deduction and estimated tax rate. Common if you're on a parent's tax return.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsDependent(false)}
+                    className={`flex flex-col items-center gap-2 px-4 py-4 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+                      isDependent === false
+                        ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                        : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border)]/80"
+                    }`}
+                  >
+                    <User size={22} className={isDependent === false ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"} />
+                    No, I file independently
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDependent(true)}
+                    className={`flex flex-col items-center gap-2 px-4 py-4 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+                      isDependent === true
+                        ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                        : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border)]/80"
+                    }`}
+                  >
+                    <Users size={22} className={isDependent === true ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"} />
+                    Yes, I'm a dependent
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   How much do you invest or save each week?
                 </label>
                 <p className="text-xs text-[var(--color-text-muted)] mb-3">
@@ -193,7 +235,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               </div>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   What are your primary goals? <span className="text-[var(--color-text-muted)] font-normal">(pick up to 3)</span>
