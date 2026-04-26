@@ -33,11 +33,21 @@ function calcProgressiveTax(taxableIncome: number, brackets: [number, number][])
   return tax;
 }
 
-export function estimateTaxRate(monthlyIncome: number): number {
+// Dependents have a reduced federal standard deduction: the greater of $1,300
+// or (earned income + $450), capped at the full standard deduction.
+function getDependentFederalDeduction(annualIncome: number): number {
+  return Math.max(1300, Math.min(FEDERAL_STANDARD_DEDUCTION, annualIncome + 450));
+}
+
+export function estimateTaxRate(monthlyIncome: number, isDependent = false): number {
   const annualIncome = monthlyIncome * 12;
   if (annualIncome <= 0) return 0;
 
-  const federalTaxable = Math.max(0, annualIncome - FEDERAL_STANDARD_DEDUCTION);
+  const federalDeduction = isDependent
+    ? getDependentFederalDeduction(annualIncome)
+    : FEDERAL_STANDARD_DEDUCTION;
+
+  const federalTaxable = Math.max(0, annualIncome - federalDeduction);
   const federalTax = calcProgressiveTax(federalTaxable, FEDERAL_BRACKETS);
 
   const oregonTaxable = Math.max(0, annualIncome - OREGON_STANDARD_DEDUCTION);
