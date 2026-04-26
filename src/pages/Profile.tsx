@@ -12,8 +12,9 @@ export default function Profile() {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState(() => String(onboardingData?.monthlyFixedPayments ?? 0));
   const [debtAmount, setDebtAmount] = useState(() => String(onboardingData?.debtAmount ?? 0));
   const [monthlyIncome, setMonthlyIncome] = useState(() => String(onboardingData?.monthlyIncome ?? finances.weeklyIncome * 4));
+  const [isDependent, setIsDependent] = useState<boolean>(() => onboardingData?.isDependent ?? false);
   const [weeklyInvestment, setWeeklyInvestment] = useState(() => String(onboardingData?.weeklyInvestment ?? finances.weeklyInvestment));
-  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0);
+  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0, isDependent);
   const [goals, setGoals] = useState<string[]>(() => onboardingData?.goals ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -35,6 +36,7 @@ export default function Profile() {
       taxRate: estimatedTax,
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
+      isDependent,
     };
     await completeOnboarding(data);
     // Also update finances directly
@@ -102,6 +104,27 @@ export default function Profile() {
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] text-sm">$</span>
               <input type="number" value={debtAmount} onChange={(e) => { setDebtAmount(e.target.value); setSaved(false); }} className={inputClass} min="0" />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Claimed as a dependent?</label>
+            <div className="flex gap-2">
+              {([false, true] as const).map((val) => (
+                <button
+                  key={String(val)}
+                  type="button"
+                  onClick={() => { setIsDependent(val); setSaved(false); }}
+                  className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                    isDependent === val
+                      ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                      : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border)]/80"
+                  }`}
+                >
+                  {val ? "Yes" : "No"}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">Affects your standard deduction</p>
           </div>
 
           <div>

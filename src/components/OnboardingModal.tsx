@@ -14,10 +14,11 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
+  const [isDependent, setIsDependent] = useState<boolean | null>(null);
   const [weeklyInvestment, setWeeklyInvestment] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
 
-  const totalSteps = 6;
+  const totalSteps = 7;
 
   const toggleGoal = (id: string) => {
     setGoals((prev) =>
@@ -27,14 +28,16 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   const handleSubmit = () => {
     const income = Number(monthlyIncome) || 0;
+    const dependent = isDependent ?? false;
     onComplete({
       cashOnHand: Number(cashOnHand) || 0,
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: income,
-      taxRate: estimateTaxRate(income),
+      taxRate: estimateTaxRate(income, dependent),
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
+      isDependent: dependent,
     });
   };
 
@@ -43,12 +46,14 @@ export default function OnboardingModal({ onComplete }: Props) {
     step === 1 ? monthlyFixedPayments !== "" :
     step === 2 ? debtAmount !== "" :
     step === 3 ? monthlyIncome !== "" :
-    step === 4 ? weeklyInvestment !== "" :
+    step === 4 ? isDependent !== null :
+    step === 5 ? weeklyInvestment !== "" :
     goals.length > 0;
 
   const stepTitle =
-    step === 5 ? "Your Goals" :
-    step === 4 ? "Investing" :
+    step === 6 ? "Your Goals" :
+    step === 5 ? "Investing" :
+    step === 4 ? "Tax Info" :
     "Let's get to know you";
 
   return (
@@ -172,6 +177,33 @@ export default function OnboardingModal({ onComplete }: Props) {
             {step === 4 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
+                  Are you claimed as a dependent on someone else's tax return?
+                </label>
+                <p className="text-xs text-[var(--color-text-muted)] mb-4">
+                  This affects your standard deduction and how we estimate your taxes. Most adults under 26 living with parents may be dependents.
+                </p>
+                <div className="flex gap-3">
+                  {([false, true] as const).map((val) => (
+                    <button
+                      key={String(val)}
+                      type="button"
+                      onClick={() => setIsDependent(val)}
+                      className={`flex-1 py-4 rounded-lg border-2 text-sm font-semibold transition-all cursor-pointer ${
+                        isDependent === val
+                          ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                          : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border)]/80"
+                      }`}
+                    >
+                      {val ? "Yes" : "No"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   How much do you invest or save each week?
                 </label>
                 <p className="text-xs text-[var(--color-text-muted)] mb-3">
@@ -193,7 +225,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               </div>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   What are your primary goals? <span className="text-[var(--color-text-muted)] font-normal">(pick up to 3)</span>
