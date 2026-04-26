@@ -4,6 +4,7 @@ export interface OnboardingData {
   debtAmount: number;
   monthlyIncome: number;
   taxRate: number;
+  isDependent: boolean;
   weeklyInvestment: number;
   goals: string[];
 }
