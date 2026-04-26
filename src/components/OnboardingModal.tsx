@@ -13,11 +13,12 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [cashOnHand, setCashOnHand] = useState("");
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
+  const [isDependent, setIsDependent] = useState<boolean | null>(null);
   const [monthlyIncome, setMonthlyIncome] = useState("");
   const [weeklyInvestment, setWeeklyInvestment] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
 
-  const totalSteps = 6;
+  const totalSteps = 7;
 
   const toggleGoal = (id: string) => {
     setGoals((prev) =>
@@ -27,12 +28,14 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   const handleSubmit = () => {
     const income = Number(monthlyIncome) || 0;
+    const dependent = isDependent ?? false;
     onComplete({
       cashOnHand: Number(cashOnHand) || 0,
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
+      isDependent: dependent,
       monthlyIncome: income,
-      taxRate: estimateTaxRate(income),
+      taxRate: estimateTaxRate(income, dependent),
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
     });
@@ -42,13 +45,14 @@ export default function OnboardingModal({ onComplete }: Props) {
     step === 0 ? cashOnHand !== "" :
     step === 1 ? monthlyFixedPayments !== "" :
     step === 2 ? debtAmount !== "" :
-    step === 3 ? monthlyIncome !== "" :
-    step === 4 ? weeklyInvestment !== "" :
+    step === 3 ? isDependent !== null :
+    step === 4 ? monthlyIncome !== "" :
+    step === 5 ? weeklyInvestment !== "" :
     goals.length > 0;
 
   const stepTitle =
-    step === 5 ? "Your Goals" :
-    step === 4 ? "Investing" :
+    step === 6 ? "Your Goals" :
+    step === 5 ? "Investing" :
     "Let's get to know you";
 
   return (
@@ -149,6 +153,44 @@ export default function OnboardingModal({ onComplete }: Props) {
             {step === 3 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
+                  Are you claimed as a dependent on someone else's taxes?
+                </label>
+                <p className="text-xs text-[var(--color-text-muted)] mb-4">
+                  This helps us estimate your tax rate accurately. Dependents (e.g. students on a parent's return) have a reduced standard deduction.
+                </p>
+                <div className="flex flex-col gap-3">
+                  {[
+                    { value: false, label: "No — I file independently", desc: "You claim your own standard deduction" },
+                    { value: true, label: "Yes — I'm claimed as a dependent", desc: "A parent or guardian claims you on their return" },
+                  ].map(({ value, label, desc }) => (
+                    <button
+                      key={String(value)}
+                      type="button"
+                      onClick={() => setIsDependent(value)}
+                      className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-sm text-left transition-all cursor-pointer ${
+                        isDependent === value
+                          ? "border-[var(--color-primary)] bg-[var(--color-glow)]"
+                          : "border-[var(--color-border)] bg-transparent hover:border-[var(--color-border)]/80"
+                      }`}
+                    >
+                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                        isDependent === value ? "border-[var(--color-primary)] bg-[var(--color-primary)]" : "border-[var(--color-border)]"
+                      }`}>
+                        {isDependent === value && <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary-foreground)]" />}
+                      </div>
+                      <div>
+                        <div className="font-medium text-[var(--color-text-heading)]">{label}</div>
+                        <div className="text-xs text-[var(--color-text-muted)] mt-0.5">{desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   Monthly income
                 </label>
                 <p className="text-xs text-[var(--color-text-muted)] mb-3">
@@ -169,7 +211,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               </div>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   How much do you invest or save each week?
@@ -193,7 +235,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               </div>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-heading)] mb-2">
                   What are your primary goals? <span className="text-[var(--color-text-muted)] font-normal">(pick up to 3)</span>

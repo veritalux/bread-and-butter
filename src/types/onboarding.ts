@@ -2,6 +2,7 @@ export interface OnboardingData {
   cashOnHand: number;
   monthlyFixedPayments: number;
   debtAmount: number;
+  isDependent: boolean;
   monthlyIncome: number;
   taxRate: number;
   weeklyInvestment: number;
