@@ -1,8 +1,14 @@
 // Estimates effective tax rate for Salem, Oregon based on annual income.
-// Combines federal income tax + Oregon state income tax.
+// Combines federal income tax + Oregon state income tax + FICA.
 // Uses 2024/2025 brackets as approximation. Single filer, standard deduction.
+// If isDependent=true, applies the reduced standard deductions for dependents.
 
 const FEDERAL_STANDARD_DEDUCTION = 14600;
+// Dependent federal deduction: greater of $1,300 or (earned income + $450), capped at $14,600
+function federalDependentDeduction(annualIncome: number): number {
+  return Math.min(FEDERAL_STANDARD_DEDUCTION, Math.max(1300, annualIncome + 450));
+}
+
 const FEDERAL_BRACKETS: [number, number][] = [
   [11600, 0.10],
   [47150, 0.12],
@@ -14,6 +20,8 @@ const FEDERAL_BRACKETS: [number, number][] = [
 ];
 
 const OREGON_STANDARD_DEDUCTION = 2745;
+const OREGON_DEPENDENT_DEDUCTION = 1175;
+
 const OREGON_BRACKETS: [number, number][] = [
   [4050, 0.0475],
   [10200, 0.0675],
@@ -33,14 +41,16 @@ function calcProgressiveTax(taxableIncome: number, brackets: [number, number][])
   return tax;
 }
 
-export function estimateTaxRate(monthlyIncome: number): number {
+export function estimateTaxRate(monthlyIncome: number, isDependent = false): number {
   const annualIncome = monthlyIncome * 12;
   if (annualIncome <= 0) return 0;
 
-  const federalTaxable = Math.max(0, annualIncome - FEDERAL_STANDARD_DEDUCTION);
+  const fedDeduction = isDependent ? federalDependentDeduction(annualIncome) : FEDERAL_STANDARD_DEDUCTION;
+  const federalTaxable = Math.max(0, annualIncome - fedDeduction);
   const federalTax = calcProgressiveTax(federalTaxable, FEDERAL_BRACKETS);
 
-  const oregonTaxable = Math.max(0, annualIncome - OREGON_STANDARD_DEDUCTION);
+  const orDeduction = isDependent ? OREGON_DEPENDENT_DEDUCTION : OREGON_STANDARD_DEDUCTION;
+  const oregonTaxable = Math.max(0, annualIncome - orDeduction);
   const oregonTax = calcProgressiveTax(oregonTaxable, OREGON_BRACKETS);
 
   // FICA (Social Security 6.2% up to $168,600 + Medicare 1.45%)
