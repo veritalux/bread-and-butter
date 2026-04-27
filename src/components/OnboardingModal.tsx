@@ -14,6 +14,7 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
+  const [isDependent, setIsDependent] = useState(false);
   const [weeklyInvestment, setWeeklyInvestment] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
 
@@ -32,7 +33,8 @@ export default function OnboardingModal({ onComplete }: Props) {
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: income,
-      taxRate: estimateTaxRate(income),
+      isDependent,
+      taxRate: estimateTaxRate(income, isDependent),
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
     });
@@ -154,7 +156,7 @@ export default function OnboardingModal({ onComplete }: Props) {
                 <p className="text-xs text-[var(--color-text-muted)] mb-3">
                   Your general monthly income before taxes.
                 </p>
-                <div className="relative">
+                <div className="relative mb-4">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">$</span>
                   <input
                     type="number"
@@ -166,6 +168,29 @@ export default function OnboardingModal({ onComplete }: Props) {
                     autoFocus
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setIsDependent(!isDependent)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-sm text-left transition-all cursor-pointer ${
+                    isDependent
+                      ? "border-[var(--color-primary)] bg-[var(--color-glow)]"
+                      : "border-[var(--color-border)] bg-transparent"
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    isDependent ? "border-[var(--color-primary)] bg-[var(--color-primary)]" : "border-[var(--color-border)]"
+                  }`}>
+                    {isDependent && <Check size={12} className="text-[var(--color-primary-foreground)]" />}
+                  </div>
+                  <div>
+                    <p className={`font-medium leading-tight ${isDependent ? "text-[var(--color-text-heading)]" : "text-[var(--color-text-muted)]"}`}>
+                      I am claimed as a dependent
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                      Someone else (e.g. a parent) claims you on their tax return
+                    </p>
+                  </div>
+                </button>
               </div>
             )}
 
