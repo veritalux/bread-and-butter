@@ -1,8 +1,10 @@
 // Estimates effective tax rate for Salem, Oregon based on annual income.
-// Combines federal income tax + Oregon state income tax.
-// Uses 2024/2025 brackets as approximation. Single filer, standard deduction.
+// Combines federal income tax + Oregon state income tax + FICA.
+// Uses 2024/2025 brackets. Single filer. Dependent filers get a reduced standard deduction.
 
 const FEDERAL_STANDARD_DEDUCTION = 14600;
+const OREGON_STANDARD_DEDUCTION = 2745;
+
 const FEDERAL_BRACKETS: [number, number][] = [
   [11600, 0.10],
   [47150, 0.12],
@@ -13,7 +15,6 @@ const FEDERAL_BRACKETS: [number, number][] = [
   [Infinity, 0.37],
 ];
 
-const OREGON_STANDARD_DEDUCTION = 2745;
 const OREGON_BRACKETS: [number, number][] = [
   [4050, 0.0475],
   [10200, 0.0675],
@@ -33,15 +34,25 @@ function calcProgressiveTax(taxableIncome: number, brackets: [number, number][])
   return tax;
 }
 
-export function estimateTaxRate(monthlyIncome: number): number {
+// When claimed as a dependent, the standard deduction is limited to
+// the greater of $1,300 or (earned income + $450), capped at the normal deduction.
+function dependentDeduction(annualIncome: number, normalDeduction: number): number {
+  return Math.max(1300, Math.min(normalDeduction, annualIncome + 450));
+}
+
+export function estimateTaxRate(monthlyIncome: number, isDependent = false): number {
   const annualIncome = monthlyIncome * 12;
   if (annualIncome <= 0) return 0;
 
-  const federalTaxable = Math.max(0, annualIncome - FEDERAL_STANDARD_DEDUCTION);
-  const federalTax = calcProgressiveTax(federalTaxable, FEDERAL_BRACKETS);
+  const fedDeduction = isDependent
+    ? dependentDeduction(annualIncome, FEDERAL_STANDARD_DEDUCTION)
+    : FEDERAL_STANDARD_DEDUCTION;
+  const orDeduction = isDependent
+    ? dependentDeduction(annualIncome, OREGON_STANDARD_DEDUCTION)
+    : OREGON_STANDARD_DEDUCTION;
 
-  const oregonTaxable = Math.max(0, annualIncome - OREGON_STANDARD_DEDUCTION);
-  const oregonTax = calcProgressiveTax(oregonTaxable, OREGON_BRACKETS);
+  const federalTax = calcProgressiveTax(Math.max(0, annualIncome - fedDeduction), FEDERAL_BRACKETS);
+  const oregonTax = calcProgressiveTax(Math.max(0, annualIncome - orDeduction), OREGON_BRACKETS);
 
   // FICA (Social Security 6.2% up to $168,600 + Medicare 1.45%)
   const socialSecurity = Math.min(annualIncome, 168600) * 0.062;
