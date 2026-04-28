@@ -1,1 +1,3 @@
-When onboarding, the app should not ask the user for their estimated tax amount, instead it should estimate tax based on their income, and calculate tax % based on what the tax would be for that income level in Salem, Oregon. It can ask whether the user is a dependent or not to help calculate this.
+The seven day view shows way more than 7 days
+Graph still doesn’t transition to dotted lines for future projections
+Money earned but not spent (day by day not including initial onboarding amount) should be listed on the moderators pov for money saved amount for users 
