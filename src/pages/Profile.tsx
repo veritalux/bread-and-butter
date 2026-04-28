@@ -12,8 +12,9 @@ export default function Profile() {
   const [monthlyFixedPayments, setMonthlyFixedPayments] = useState(() => String(onboardingData?.monthlyFixedPayments ?? 0));
   const [debtAmount, setDebtAmount] = useState(() => String(onboardingData?.debtAmount ?? 0));
   const [monthlyIncome, setMonthlyIncome] = useState(() => String(onboardingData?.monthlyIncome ?? finances.weeklyIncome * 4));
+  const [isDependent, setIsDependent] = useState(() => onboardingData?.isDependent ?? false);
   const [weeklyInvestment, setWeeklyInvestment] = useState(() => String(onboardingData?.weeklyInvestment ?? finances.weeklyInvestment));
-  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0);
+  const estimatedTax = estimateTaxRate(Number(monthlyIncome) || 0, isDependent);
   const [goals, setGoals] = useState<string[]>(() => onboardingData?.goals ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -32,6 +33,7 @@ export default function Profile() {
       monthlyFixedPayments: Number(monthlyFixedPayments) || 0,
       debtAmount: Number(debtAmount) || 0,
       monthlyIncome: Number(monthlyIncome) || 0,
+      isDependent,
       taxRate: estimatedTax,
       weeklyInvestment: Number(weeklyInvestment) || 0,
       goals,
@@ -110,6 +112,35 @@ export default function Profile() {
               {estimatedTax}%
             </div>
             <p className="text-xs text-[var(--color-text-muted)] mt-1">Auto-calculated based on your income</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-heading)] mb-1.5">Claimed as a dependent?</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setIsDependent(true); setSaved(false); }}
+                className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                  isDependent
+                    ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                    : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
+                }`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsDependent(false); setSaved(false); }}
+                className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                  !isDependent
+                    ? "border-[var(--color-primary)] bg-[var(--color-glow)] text-[var(--color-text-heading)]"
+                    : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
+                }`}
+              >
+                No
+              </button>
+            </div>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">Affects your standard deduction and Oregon state tax</p>
           </div>
 
           <div>
