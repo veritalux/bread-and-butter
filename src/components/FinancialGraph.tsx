@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceLine,
 } from "recharts";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -69,7 +70,7 @@ export default function FinancialGraph() {
     let startDate: string;
     if (range === "7d") {
       const d = new Date(now);
-      d.setDate(d.getDate() - 7);
+      d.setDate(d.getDate() - 6);
       startDate = localDateStr(d);
     } else if (range === "30d") {
       const d = new Date(now);
@@ -120,8 +121,8 @@ export default function FinancialGraph() {
       });
     }
 
-    // Add projection (7 days out based on daily averages) — skip for 7D view
-    if (filtered.length >= 2 && range !== "7d") {
+    // Add projection (7 days out based on daily averages)
+    if (filtered.length >= 2) {
       const dayCount = Math.max(1, points.length);
       const avgDailyIncome = cumIncome / dayCount;
       const avgDailySpending = cumSpending / dayCount;
@@ -165,6 +166,12 @@ export default function FinancialGraph() {
   const hasProjections = projectionStartIndex >= 0;
   const hasDebtData = data.some((d) => d.debt !== null && d.debt > 0);
   const hasInvestmentData = data.some((d) => d.invested > 0);
+
+  // Label for today's x-axis position (used by ReferenceLine)
+  const todayLabel = useMemo(() => {
+    const todayStr = localDateStr(new Date());
+    return data.find((d) => d.date === todayStr)?.label ?? null;
+  }, [data]);
 
   const chartData: ChartDataPoint[] = useMemo(() => {
     if (!hasProjections) {
@@ -298,17 +305,27 @@ export default function FinancialGraph() {
           {hasInvestmentData && (
             <Area type="monotone" dataKey="invested" name="Invested" stroke="#8b5cf6" fill="none" strokeWidth={2} connectNulls={false} />
           )}
+          {/* Today marker — vertical reference line at the boundary between actual and projected */}
+          {hasProjections && todayLabel && (
+            <ReferenceLine
+              x={todayLabel}
+              stroke="var(--color-text-muted)"
+              strokeDasharray="3 3"
+              strokeOpacity={0.5}
+              label={{ value: "Today", position: "insideTopRight", fontSize: 9, fill: "var(--color-text-muted)" }}
+            />
+          )}
           {/* Projected data — dotted lines */}
           {hasProjections && (
             <>
-              <Area type="monotone" dataKey="incomeProj" name="Income (proj)" stroke="#10B981" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
-              <Area type="monotone" dataKey="spendingProj" name="Spending (proj)" stroke="#ef4444" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
-              <Area type="monotone" dataKey="savingsProj" name="Savings (proj)" stroke="var(--color-primary)" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+              <Area type="monotone" dataKey="incomeProj" name="Income (proj)" stroke="#10B981" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
+              <Area type="monotone" dataKey="spendingProj" name="Spending (proj)" stroke="#ef4444" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
+              <Area type="monotone" dataKey="savingsProj" name="Savings (proj)" stroke="var(--color-primary)" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
               {hasDebtData && (
-                <Area type="monotone" dataKey="debtProj" name="Debt (proj)" stroke="#f97316" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+                <Area type="monotone" dataKey="debtProj" name="Debt (proj)" stroke="#f97316" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
               )}
               {hasInvestmentData && (
-                <Area type="monotone" dataKey="investedProj" name="Invested (proj)" stroke="#8b5cf6" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+                <Area type="monotone" dataKey="investedProj" name="Invested (proj)" stroke="#8b5cf6" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
               )}
             </>
           )}

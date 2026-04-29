@@ -1,8 +1,12 @@
-import { DollarSign, TrendingDown, PiggyBank, Wallet } from "lucide-react";
+import { useState, useRef } from "react";
+import { DollarSign, TrendingDown, PiggyBank, Wallet, Pencil, Check } from "lucide-react";
 import { useApp } from "../context/useApp";
 
 export default function MoneyTallyBar() {
-  const { onboardingData, finances } = useApp();
+  const { onboardingData, finances, setFinances } = useApp();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Use onboarding monthly income if available, fall back to finances weekly
   const monthlyIncome = onboardingData?.monthlyIncome ?? finances.weeklyIncome * 4;
@@ -11,6 +15,23 @@ export default function MoneyTallyBar() {
   const weeklyFixed = monthlyFixed / 4;
   const taxAmount = weeklyIncome * (finances.taxRate / 100);
   const realIncome = weeklyIncome - taxAmount - finances.weeklyInvestment - weeklyFixed;
+
+  const startEdit = () => {
+    setDraft(String(finances.weeklyInvestment));
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  };
+
+  const commitEdit = () => {
+    const val = Math.max(0, Number(draft) || 0);
+    setFinances({ ...finances, weeklyInvestment: val });
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") commitEdit();
+    if (e.key === "Escape") setEditing(false);
+  };
 
   return (
     <div className="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
@@ -62,9 +83,33 @@ export default function MoneyTallyBar() {
           <div className="flex items-center gap-1.5">
             <PiggyBank size={14} className="text-[var(--color-primary)]" />
             <span>Invest</span>
-            <span className="font-semibold text-[var(--color-text-heading)] ml-1">
-              −${finances.weeklyInvestment}
-            </span>
+            {editing ? (
+              <div className="flex items-center gap-1 ml-1">
+                <span className="text-[var(--color-text-muted)]">−$</span>
+                <input
+                  ref={inputRef}
+                  type="number"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={commitEdit}
+                  min="0"
+                  className="w-16 px-1 py-0.5 rounded bg-[var(--color-background)] border border-[var(--color-primary)] text-[var(--color-text)] text-xs focus:outline-none"
+                />
+                <button onClick={commitEdit} className="p-0.5 text-[var(--color-primary)] cursor-pointer bg-transparent border-0">
+                  <Check size={12} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={startEdit}
+                className="flex items-center gap-1 ml-1 font-semibold text-[var(--color-text-heading)] cursor-pointer bg-transparent border-0 hover:text-[var(--color-primary)] transition-colors group"
+                title="Click to edit weekly investment"
+              >
+                −${finances.weeklyInvestment}
+                <Pencil size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
+              </button>
+            )}
           </div>
         </div>
       </div>

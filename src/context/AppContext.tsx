@@ -149,9 +149,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ? query(collection(db, "users"), where("role", "==", "user"), where("moderatorId", "==", currentUser.id))
       : collection(db, "users");
 
-    const unsub = onSnapshot(q, (snap) => {
+    const unsub = onSnapshot(q, async (snap) => {
       const users = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as AppUser);
-      setAllUsers(users);
+      // For moderators, run any pending migrations on each visible user so accounts
+      // receive updates even if those users haven't logged in recently.
+      if (currentUser.role === "moderator") {
+        const migrated = await Promise.all(users.map((u) => migrateAccount(u)));
+        setAllUsers(migrated);
+      } else {
+        setAllUsers(users);
+      }
     });
     return unsub;
   }, [currentUser]);
