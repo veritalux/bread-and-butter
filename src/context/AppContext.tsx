@@ -21,15 +21,16 @@ import { auth, db } from "../lib/firebase";
 import type { Challenge, UserFinances } from "../types/challenge";
 import { computeDaysLeft } from "../types/challenge";
 import type { AppUser, CheckInThreshold, CheckInLog } from "../types/user";
-import { makeInitials, DEFAULT_THRESHOLD } from "../types/user";
+import { makeInitials, DEFAULT_THRESHOLD, CURRENT_ACCOUNT_VERSION } from "../types/user";
 import type { OnboardingData } from "../types/onboarding";
 import type { DailyLogEntry } from "../types/dailyLog";
 import type { UserNotification } from "../types/notification";
 import { AppContext } from "./appContextDef";
 import type { Theme } from "./appContextDef";
 import type { FontChoice } from "../types/fonts";
+import { migrateAccount } from "../lib/accountMigrations";
 
-const DEFAULT_FINANCES: UserFinances = { weeklyIncome: 1000, taxRate: 22, weeklyInvestment: 100 };
+const DEFAULT_FINANCES: UserFinances = { weeklyIncome: 1000, taxRate: 22, weeklyInvestment: 0 };
 const THEME_KEY = "bb-theme";
 const FONT_KEY = "bb-font";
 
@@ -108,7 +109,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (firebaseUser) {
         const userDoc = await loadUserDoc(firebaseUser.uid);
         if (userDoc) {
-          setCurrentUser(userDoc);
+          // Run any pending account migrations
+          const migratedUser = await migrateAccount(userDoc);
+          setCurrentUser(migratedUser);
           const userChallenges = await loadChallenges(firebaseUser.uid);
           setChallenges(userChallenges);
           // Load finances from user doc
@@ -247,6 +250,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         lastActiveDate: today,
         streak: 0,
         longestStreak: 0,
+        accountVersion: CURRENT_ACCOUNT_VERSION,
         ...(moderatorId ? { moderatorId } : {}),
         ...(coachCode ? { coachCode } : {}),
       };

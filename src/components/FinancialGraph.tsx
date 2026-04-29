@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useEffect, useCallback, useMemo, useTransition } from "react";
 import {
   AreaChart,
   Area,
@@ -28,6 +28,22 @@ interface DataPoint {
   savings: number;
   debt: number | null;
   invested: number;
+  projected: boolean;
+}
+
+interface ChartDataPoint {
+  date: string;
+  label: string;
+  income?: number;
+  spending?: number;
+  savings?: number;
+  debt?: number | null;
+  invested?: number;
+  incomeProj?: number;
+  spendingProj?: number;
+  savingsProj?: number;
+  debtProj?: number | null;
+  investedProj?: number;
   projected: boolean;
 }
 
@@ -70,7 +86,6 @@ export default function FinancialGraph() {
     const filtered = logs.filter((l) => l.date >= startDate && l.date <= today);
 
     // Starting values from onboarding
-    const startingSavings = onboardingData?.cashOnHand ?? 0;
     const startingDebt = onboardingData?.debtAmount ?? 0;
     const hasDebt = startingDebt > 0;
 
@@ -98,15 +113,15 @@ export default function FinancialGraph() {
         label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         income: cumIncome,
         spending: cumSpending,
-        savings: startingSavings + cumIncome - cumSpending,
+        savings: cumIncome - cumSpending,
         debt: hasDebt ? Math.max(0, startingDebt) : null,
         invested: cumInvested,
         projected: false,
       });
     }
 
-    // Add projection (7 days out based on daily averages)
-    if (filtered.length >= 2) {
+    // Add projection (7 days out based on daily averages) — skip for 7D view
+    if (filtered.length >= 2 && range !== "7d") {
       const dayCount = Math.max(1, points.length);
       const avgDailyIncome = cumIncome / dayCount;
       const avgDailySpending = cumSpending / dayCount;
@@ -123,7 +138,7 @@ export default function FinancialGraph() {
           label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
           income: Math.round(cumIncome),
           spending: Math.round(cumSpending),
-          savings: Math.round(startingSavings + cumIncome - cumSpending),
+          savings: Math.round(cumIncome - cumSpending),
           debt: hasDebt ? Math.max(0, startingDebt) : null,
           invested: Math.round(cumInvested),
           projected: true,
@@ -145,11 +160,65 @@ export default function FinancialGraph() {
     { key: "all", label: "All" },
   ];
 
-  // Find where projections start for split rendering
+  // Split data into actual vs projected series for different stroke styles
   const projectionStartIndex = data.findIndex((d) => d.projected);
   const hasProjections = projectionStartIndex >= 0;
   const hasDebtData = data.some((d) => d.debt !== null && d.debt > 0);
   const hasInvestmentData = data.some((d) => d.invested > 0);
+
+  const chartData: ChartDataPoint[] = useMemo(() => {
+    if (!hasProjections) {
+      // No projections — all data is actual
+      return data.map((d) => ({
+        ...d,
+        incomeProj: undefined,
+        spendingProj: undefined,
+        savingsProj: undefined,
+        debtProj: undefined,
+        investedProj: undefined,
+      }));
+    }
+
+    return data.map((d, i) => {
+      // Bridge point: last actual point also appears in projected series for continuity
+      const isBridge = i === projectionStartIndex - 1;
+
+      if (d.projected) {
+        return {
+          date: d.date,
+          label: d.label,
+          projected: true,
+          income: undefined,
+          spending: undefined,
+          savings: undefined,
+          debt: undefined,
+          invested: undefined,
+          incomeProj: d.income,
+          spendingProj: d.spending,
+          savingsProj: d.savings,
+          debtProj: d.debt,
+          investedProj: d.invested,
+        };
+      }
+
+      return {
+        date: d.date,
+        label: d.label,
+        projected: false,
+        income: d.income,
+        spending: d.spending,
+        savings: d.savings,
+        debt: d.debt,
+        invested: d.invested,
+        // Bridge: duplicate values so projected lines connect seamlessly
+        incomeProj: isBridge ? d.income : undefined,
+        spendingProj: isBridge ? d.spending : undefined,
+        savingsProj: isBridge ? d.savings : undefined,
+        debtProj: isBridge ? d.debt : undefined,
+        investedProj: isBridge ? d.invested : undefined,
+      };
+    });
+  }, [data, hasProjections, projectionStartIndex]);
 
   if (isPending) {
     return (
@@ -192,7 +261,7 @@ export default function FinancialGraph() {
       </div>
 
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={data} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
+        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
           <defs>
             <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
@@ -212,56 +281,36 @@ export default function FinancialGraph() {
             formatter={(value: unknown, name: unknown) => {
               const v = Number(value);
               if (v === 0 && name === "Debt") return [null, null];
-              return [`$${v.toLocaleString()}`];
+              if (value == null) return [null, null];
+              const nameStr = String(name);
+              const label = nameStr.endsWith(" (proj)") ? nameStr.replace(" (proj)", "") : nameStr;
+              return [`$${v.toLocaleString()}`, label];
             }}
           />
           <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
-          <Area
-            type="monotone"
-            dataKey="income"
-            name="Income"
-            stroke="#10B981"
-            fill="none"
-            strokeWidth={2}
-            strokeDasharray={hasProjections ? undefined : undefined}
-          />
-          <Area
-            type="monotone"
-            dataKey="spending"
-            name="Spending"
-            stroke="#ef4444"
-            fill="none"
-            strokeWidth={2}
-          />
-          <Area
-            type="monotone"
-            dataKey="savings"
-            name="Savings"
-            stroke="var(--color-primary)"
-            fill="url(#savingsGrad)"
-            strokeWidth={2}
-          />
+          {/* Actual data — solid lines */}
+          <Area type="monotone" dataKey="income" name="Income" stroke="#10B981" fill="none" strokeWidth={2} connectNulls={false} />
+          <Area type="monotone" dataKey="spending" name="Spending" stroke="#ef4444" fill="none" strokeWidth={2} connectNulls={false} />
+          <Area type="monotone" dataKey="savings" name="Savings" stroke="var(--color-primary)" fill="url(#savingsGrad)" strokeWidth={2} connectNulls={false} />
           {hasDebtData && (
-            <Area
-              type="monotone"
-              dataKey="debt"
-              name="Debt"
-              stroke="#f97316"
-              fill="none"
-              strokeWidth={2}
-              strokeDasharray="6 3"
-              connectNulls={false}
-            />
+            <Area type="monotone" dataKey="debt" name="Debt" stroke="#f97316" fill="none" strokeWidth={2} strokeDasharray="6 3" connectNulls={false} />
           )}
           {hasInvestmentData && (
-            <Area
-              type="monotone"
-              dataKey="invested"
-              name="Invested"
-              stroke="#8b5cf6"
-              fill="none"
-              strokeWidth={2}
-            />
+            <Area type="monotone" dataKey="invested" name="Invested" stroke="#8b5cf6" fill="none" strokeWidth={2} connectNulls={false} />
+          )}
+          {/* Projected data — dotted lines */}
+          {hasProjections && (
+            <>
+              <Area type="monotone" dataKey="incomeProj" name="Income (proj)" stroke="#10B981" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+              <Area type="monotone" dataKey="spendingProj" name="Spending (proj)" stroke="#ef4444" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+              <Area type="monotone" dataKey="savingsProj" name="Savings (proj)" stroke="var(--color-primary)" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+              {hasDebtData && (
+                <Area type="monotone" dataKey="debtProj" name="Debt (proj)" stroke="#f97316" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+              )}
+              {hasInvestmentData && (
+                <Area type="monotone" dataKey="investedProj" name="Invested (proj)" stroke="#8b5cf6" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+              )}
+            </>
           )}
         </AreaChart>
       </ResponsiveContainer>

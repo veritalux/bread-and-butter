@@ -16,7 +16,11 @@ export interface AppUser {
   coachCode?: string;
   disclaimerAcknowledgedAt?: string;
   onboardingCompletedAt?: string;
+  accountVersion?: number;
 }
+
+/** Current account schema version. Bump this when adding migrations. */
+export const CURRENT_ACCOUNT_VERSION = 1;
 
 export interface CheckInThreshold {
   warningDays: number;
