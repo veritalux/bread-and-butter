@@ -21,10 +21,17 @@ export async function migrateAccount(user: AppUser): Promise<AppUser> {
 
   const updates: Partial<AppUser> = {};
 
-  // --- Migration 1: assign unassigned users to moderator SAID8JEH, generate coach codes for old moderators ---
+  // --- Migration 1: ensure initials are set ---
   if (version < 1) {
+    if (!user.initials) {
+      updates.initials = makeInitials(user.name);
+    }
+  }
+
+  // --- Migration 2: assign unassigned users to SAID8JEH, generate coach codes for old moderators ---
+  // Runs for both v0 (first time) and v1 (previously missed if SAID8JEH didn't exist yet).
+  if (version < 2) {
     if (user.role === "user" && !user.moderatorId) {
-      // Find the moderator with coachCode SAID8JEH
       const modQuery = query(
         collection(db, "users"),
         where("coachCode", "==", "SAID8JEH")
@@ -36,15 +43,9 @@ export async function migrateAccount(user: AppUser): Promise<AppUser> {
     }
 
     if (user.role === "moderator" && !user.coachCode) {
-      // Generate a coach code: last name (up to 4 chars) + first 4 chars of UID
       const namePart = user.name.trim().split(/\s+/).pop()!.toUpperCase().slice(0, 4);
       const uidPart = user.id.slice(0, 4).toUpperCase();
       updates.coachCode = namePart + uidPart;
-    }
-
-    // Ensure initials are set (older accounts may be missing them)
-    if (!user.initials) {
-      updates.initials = makeInitials(user.name);
     }
   }
 

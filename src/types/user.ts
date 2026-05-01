@@ -20,7 +20,7 @@ export interface AppUser {
 }
 
 /** Current account schema version. Bump this when adding migrations. */
-export const CURRENT_ACCOUNT_VERSION = 1;
+export const CURRENT_ACCOUNT_VERSION = 2;
 
 export interface CheckInThreshold {
   warningDays: number;

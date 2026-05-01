@@ -69,7 +69,7 @@ export default function FinancialGraph() {
     let startDate: string;
     if (range === "7d") {
       const d = new Date(now);
-      d.setDate(d.getDate() - 7);
+      d.setDate(d.getDate() - 6);
       startDate = localDateStr(d);
     } else if (range === "30d") {
       const d = new Date(now);
@@ -301,14 +301,14 @@ export default function FinancialGraph() {
           {/* Projected data — dotted lines */}
           {hasProjections && (
             <>
-              <Area type="monotone" dataKey="incomeProj" name="Income (proj)" stroke="#10B981" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
-              <Area type="monotone" dataKey="spendingProj" name="Spending (proj)" stroke="#ef4444" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
-              <Area type="monotone" dataKey="savingsProj" name="Savings (proj)" stroke="var(--color-primary)" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+              <Area type="monotone" dataKey="incomeProj" name="Income (proj)" stroke="#10B981" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
+              <Area type="monotone" dataKey="spendingProj" name="Spending (proj)" stroke="#ef4444" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
+              <Area type="monotone" dataKey="savingsProj" name="Savings (proj)" stroke="var(--color-primary)" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
               {hasDebtData && (
-                <Area type="monotone" dataKey="debtProj" name="Debt (proj)" stroke="#f97316" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+                <Area type="monotone" dataKey="debtProj" name="Debt (proj)" stroke="#f97316" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
               )}
               {hasInvestmentData && (
-                <Area type="monotone" dataKey="investedProj" name="Invested (proj)" stroke="#8b5cf6" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls legendType="none" />
+                <Area type="monotone" dataKey="investedProj" name="Invested (proj)" stroke="#8b5cf6" fill="none" strokeWidth={2} strokeDasharray="4 4" connectNulls={false} legendType="none" />
               )}
             </>
           )}
