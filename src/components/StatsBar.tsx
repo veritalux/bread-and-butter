@@ -2,10 +2,10 @@ import { DollarSign, Trophy, TrendingUp, Target } from "lucide-react";
 import { useApp } from "../context/useApp";
 
 export default function StatsBar() {
-  const { challenges } = useApp();
+  const { challenges, dailyNetSaved } = useApp();
 
   const currentYear = new Date().getFullYear();
-  const savedThisYear = challenges.reduce(
+  const challengeSavedThisYear = challenges.reduce(
     (sum, c) =>
       sum +
       c.logs
@@ -13,6 +13,7 @@ export default function StatsBar() {
         .reduce((s, l) => s + l.amount, 0),
     0
   );
+  const savedThisYear = challengeSavedThisYear + Math.max(0, dailyNetSaved);
 
   const completedCount = challenges.filter((c) => c.saved >= c.goal).length;
   const totalSaved = challenges.reduce((sum, c) => sum + c.saved, 0);

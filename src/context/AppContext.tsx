@@ -79,6 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [checkInLogs, setCheckInLogs] = useState<Record<string, CheckInLog[]>>({});
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [dailyNetSaved, setDailyNetSaved] = useState(0);
 
   const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem(THEME_KEY) as Theme) || "dark"
@@ -125,6 +126,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setOnboardingData(onbSnap.data() as OnboardingData);
           } else {
             setOnboardingData(null);
+          }
+          // Load daily net saved (income - spending from daily logs, current year)
+          if (userDoc.role === "user") {
+            const currentYear = new Date().getFullYear().toString();
+            const dailyLogsSnap = await getDocs(collection(db, "users", firebaseUser.uid, "dailyLogs"));
+            let net = 0;
+            dailyLogsSnap.docs.forEach((d) => {
+              const log = d.data() as DailyLogEntry;
+              if (log.date.startsWith(currentYear)) {
+                net += log.income.reduce((s, e) => s + e.amount, 0) - log.spending.reduce((s, e) => s + e.amount, 0);
+              }
+            });
+            setDailyNetSaved(net);
           }
           // If moderator, load thresholds
           if (userDoc.role === "moderator") {
@@ -455,6 +469,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Daily Log ---
   const saveDailyLog = useCallback(async (entry: DailyLogEntry) => {
     if (!currentUser) return;
+
+    // Compute delta to keep dailyNetSaved accurate
+    const currentYear = new Date().getFullYear().toString();
+    if (entry.date.startsWith(currentYear)) {
+      const oldSnap = await getDoc(doc(db, "users", currentUser.id, "dailyLogs", entry.date));
+      const oldNet = oldSnap.exists()
+        ? (() => { const old = oldSnap.data() as DailyLogEntry; return old.income.reduce((s, e) => s + e.amount, 0) - old.spending.reduce((s, e) => s + e.amount, 0); })()
+        : 0;
+      const newNet = entry.income.reduce((s, e) => s + e.amount, 0) - entry.spending.reduce((s, e) => s + e.amount, 0);
+      setDailyNetSaved((prev) => prev + (newNet - oldNet));
+    }
+
     await setDoc(doc(db, "users", currentUser.id, "dailyLogs", entry.date), entry);
 
     // Update streak based on daily log
@@ -523,6 +549,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         completeOnboarding,
         saveDailyLog,
         loadDailyLog,
+        dailyNetSaved,
         notifications,
         requestTransfer,
         respondToTransfer,

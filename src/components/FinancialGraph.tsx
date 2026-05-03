@@ -69,7 +69,7 @@ export default function FinancialGraph() {
     let startDate: string;
     if (range === "7d") {
       const d = new Date(now);
-      d.setDate(d.getDate() - 7);
+      d.setDate(d.getDate() - 6);
       startDate = localDateStr(d);
     } else if (range === "30d") {
       const d = new Date(now);
@@ -188,11 +188,6 @@ export default function FinancialGraph() {
           date: d.date,
           label: d.label,
           projected: true,
-          income: undefined,
-          spending: undefined,
-          savings: undefined,
-          debt: undefined,
-          invested: undefined,
           incomeProj: d.income,
           spendingProj: d.spending,
           savingsProj: d.savings,
@@ -211,11 +206,13 @@ export default function FinancialGraph() {
         debt: d.debt,
         invested: d.invested,
         // Bridge: duplicate values so projected lines connect seamlessly
-        incomeProj: isBridge ? d.income : undefined,
-        spendingProj: isBridge ? d.spending : undefined,
-        savingsProj: isBridge ? d.savings : undefined,
-        debtProj: isBridge ? d.debt : undefined,
-        investedProj: isBridge ? d.invested : undefined,
+        ...(isBridge ? {
+          incomeProj: d.income,
+          spendingProj: d.spending,
+          savingsProj: d.savings,
+          debtProj: d.debt,
+          investedProj: d.invested,
+        } : {}),
       };
     });
   }, [data, hasProjections, projectionStartIndex]);

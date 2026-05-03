@@ -41,6 +41,7 @@ export interface AppContextType {
   completeOnboarding: (data: OnboardingData) => Promise<void>;
   saveDailyLog: (entry: DailyLogEntry) => Promise<void>;
   loadDailyLog: (date: string) => Promise<DailyLogEntry | null>;
+  dailyNetSaved: number;
   notifications: UserNotification[];
   requestTransfer: (userId: string, toModeratorCoachCode: string) => Promise<{ ok: boolean; error?: string }>;
   respondToTransfer: (transferRequestId: string, accept: boolean) => Promise<void>;

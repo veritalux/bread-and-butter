@@ -1,8 +1,12 @@
-import { DollarSign, TrendingDown, PiggyBank, Wallet } from "lucide-react";
+import { useState, useRef } from "react";
+import { DollarSign, TrendingDown, PiggyBank, Wallet, Pencil, Check } from "lucide-react";
 import { useApp } from "../context/useApp";
 
 export default function MoneyTallyBar() {
-  const { onboardingData, finances } = useApp();
+  const { onboardingData, finances, setFinances } = useApp();
+  const [editingInvest, setEditingInvest] = useState(false);
+  const [investInput, setInvestInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Use onboarding monthly income if available, fall back to finances weekly
   const monthlyIncome = onboardingData?.monthlyIncome ?? finances.weeklyIncome * 4;
@@ -11,6 +15,23 @@ export default function MoneyTallyBar() {
   const weeklyFixed = monthlyFixed / 4;
   const taxAmount = weeklyIncome * (finances.taxRate / 100);
   const realIncome = weeklyIncome - taxAmount - finances.weeklyInvestment - weeklyFixed;
+
+  const startEditInvest = () => {
+    setInvestInput(String(finances.weeklyInvestment));
+    setEditingInvest(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  };
+
+  const commitInvest = () => {
+    const val = Math.max(0, Number(investInput) || 0);
+    setFinances({ ...finances, weeklyInvestment: val });
+    setEditingInvest(false);
+  };
+
+  const handleInvestKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") commitInvest();
+    if (e.key === "Escape") setEditingInvest(false);
+  };
 
   return (
     <div className="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
@@ -62,9 +83,34 @@ export default function MoneyTallyBar() {
           <div className="flex items-center gap-1.5">
             <PiggyBank size={14} className="text-[var(--color-primary)]" />
             <span>Invest</span>
-            <span className="font-semibold text-[var(--color-text-heading)] ml-1">
-              −${finances.weeklyInvestment}
-            </span>
+            {editingInvest ? (
+              <span className="flex items-center gap-1 ml-1">
+                <span className="text-xs text-[var(--color-text-muted)]">−$</span>
+                <input
+                  ref={inputRef}
+                  type="number"
+                  value={investInput}
+                  onChange={(e) => setInvestInput(e.target.value)}
+                  onBlur={commitInvest}
+                  onKeyDown={handleInvestKeyDown}
+                  className="w-16 px-1 py-0.5 rounded bg-[var(--color-background)] border border-[var(--color-primary)] text-xs text-[var(--color-text)] focus:outline-none"
+                  min="0"
+                  autoFocus
+                />
+                <button onClick={commitInvest} className="text-[var(--color-primary)] cursor-pointer bg-transparent border-0 p-0">
+                  <Check size={12} />
+                </button>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 ml-1">
+                <span className="font-semibold text-[var(--color-text-heading)]">
+                  −${finances.weeklyInvestment}
+                </span>
+                <button onClick={startEditInvest} className="text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer bg-transparent border-0 p-0 transition-colors">
+                  <Pencil size={11} />
+                </button>
+              </span>
+            )}
           </div>
         </div>
       </div>
